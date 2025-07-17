@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Môi trường ảo (tùy theo tên)
+venv/
+myenv/
+
+# VSCode settings (tuỳ chọn)
+.vscode/
+
+# Jupyter notebook checkpoints (nếu dùng)
+.ipynb_checkpoints/
+
+# File hệ điều hành
+.DS_Store
+Thumbs.db
+
+# Flask / Instance folder (nếu dùng config riêng)
+instance/
+*.sqlite3
+
+# Migrations (nếu dùng Flask-Migrate)
+migrations/
+
+# Cache
+.cache/
+*.tmp
+
+# Env file (chứa biến môi trường, không public)
+.env
+
+# Coverage / testing
+htmlcov/
+.coverage
+.tox/
+.pytest_cache/

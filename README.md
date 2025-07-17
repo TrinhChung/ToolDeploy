@@ -76,3 +76,9 @@ set FLASK_DEBUG=1
 # PowerShell
 $env:FLASK_DEBUG = "1"
 ```
+pip freeze > requirements.txt
+
+pip install -r requirements.txt
+
+Tạo SECRET_KEY
+python3 -c "import secrets; print(secrets.token_hex(32))"
