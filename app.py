@@ -61,9 +61,11 @@ def create_app():
 
     from routes.home import home_bp
     from routes.auth import auth_bp
+    from routes.admin import admin_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
 
     # Kiểm soát truy cập: dùng Flask-Login, không cần kiểm tra "facebook_user_id" nữa
     @app.before_request

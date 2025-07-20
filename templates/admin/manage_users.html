@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+	<h2>Quản lý tài khoản người dùng</h2>
+	<table class="table table-striped">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Tên đăng nhập</th>
+				<th>Email</th>
+				<th>Kích hoạt?</th>
+				<th>Admin?</th>
+				<th>Thao tác</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for user in users %}
+			<tr>
+				<td>{{ user.id }}</td>
+				<td>{{ user.username }}</td>
+				<td>{{ user.email }}</td>
+				<td>
+					{% if user.is_active %}
+					<span class="badge bg-success">Đã duyệt</span>
+					{% else %}
+					<a href="{{ url_for('admin.activate_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Duyệt</a>
+					{% endif %}
+				</td>
+				<td>
+					{% if user.is_admin %}
+					<span class="badge bg-primary">Admin</span>
+					{% else %}
+					<span class="badge bg-secondary">User</span>
+					{% endif %}
+				</td>
+				<td>
+					{% if not user.is_admin %}
+					<a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm"
+						onclick="return confirm('Bạn chắc chắn muốn xóa tài khoản này?');">Xóa</a>
+					{% endif %}
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

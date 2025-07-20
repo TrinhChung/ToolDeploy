@@ -112,20 +112,27 @@
 							</ul>
 						</li>
 
-						<!-- YouTube Dropdown -->
+						{% if current_user.is_authenticated and current_user.is_admin %}
+						<!-- Admin Dropdown -->
 						<li class="nav-item dropdown">
-							<a class="nav-link dropdown-toggle" href="#" id="youtubeDropdown" role="button" data-bs-toggle="dropdown"
+							<a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown"
 								aria-expanded="false">
-								YouTube
+								Admin
 							</a>
-							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="youtubeDropdown">
-								<li><a class="dropdown-item" href="/download-url">Download</a></li>
-								<li><a class="dropdown-item" href="/batch/playlist">YouTube
-										Playlist</a></li>
-								<li><a class="dropdown-item" href="/videos">Videos</a></li>
-								<li><a class="dropdown-item" href="/video_splits">Video Splits</a></li>
+							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
+								<li>
+									<a class="dropdown-item" href="{{ url_for('admin.manage_users') }}">Quản lý User</a>
+								</li>
+								<!-- Bạn có thể bổ sung các chức năng admin khác ở đây -->
+								<li>
+									<hr class="dropdown-divider">
+								</li>
+								<li>
+									<a class="dropdown-item" href="/admin/logs">Xem logs</a>
+								</li>
 							</ul>
 						</li>
+						{% endif %}
 
 						<!-- Legal Dropdown -->
 						<li class="nav-item dropdown">
