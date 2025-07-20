@@ -21,6 +21,19 @@ migrate = Migrate()
 def create_app():
     app = Flask(__name__, static_url_path="/static")
 
+    @app.context_processor
+    def inject_common_env():
+        return dict(
+            app_name=os.getenv("APP_NAME", "TOOL DEPLOY"),
+            contact_email=os.getenv("EMAIL", "chungtrinh2k2@gmail.com"),
+            address=os.getenv(
+                "ADDRESS", "147 Thái Phiên, Phường 9,Quận 11, TP.HCM, Việt Nam"
+            ),
+            dns_web=os.getenv("DNS_WEB", "smartrent.id.vn"),
+            tax_number=os.getenv("TAX_NUMBER", "0318728792"),
+            phone_number=os.getenv("PHONE_NUMBER", "07084773484")
+        )
+
     # Cấu hình logging
     setup_logging()
 
@@ -53,9 +66,10 @@ def create_app():
     migrate.init_app(app, db)
 
     from routes.home import home_bp
-
+    from routes.auth import auth_bp
 
     app.register_blueprint(home_bp)
+    app.register_blueprint(auth_bp)
 
     @app.before_request
     def require_login():

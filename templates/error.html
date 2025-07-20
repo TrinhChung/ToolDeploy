@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link rel="icon" type="image/svg+xml"
+					href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%234267B2'/><text x='50%' y='70%' font-size='70' fill='white' text-anchor='middle' font-family='Arial'>{{ app_name[0]|upper }}</text></svg>">
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/global.css') }}">
+		<title>Trang Lỗi</title>
+		<style>
+			h1 {
+				color: #d9534f;
+			}
+
+			p {
+				color: #5a5a5a;
+				font-size: 16px;
+			}
+
+			.error-message {
+				font-weight: bold;
+				color: #d9534f;
+			}
+
+			.btn {
+				display: inline-block;
+				padding: 10px 20px;
+				margin-top: 20px;
+				background-color: #007bff;
+				color: white;
+				text-decoration: none;
+				border-radius: 5px;
+				font-size: 16px;
+			}
+
+			.btn:hover {
+				background-color: #0056b3;
+			}
+		</style>
+	</head>
+	<body>
+		{% include 'header.html' %}
+		<div class="container">
+			<h1>Đã xảy ra lỗi!</h1>
+			<p>Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn.</p>
+			<p class="error-message">{{error_message}}</p>
+			<a href="/" class="btn">Quay lại Trang Chủ</a>
+			<a href="/download-url" class="btn">Quay lại Download URL</a>
+		</div>
+
+	</body>
+</html>

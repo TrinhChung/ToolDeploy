@@ -4,7 +4,7 @@ home_bp = Blueprint('home', __name__)
 
 @home_bp.route('/')
 def home():
-    return "<h1>Welcome to Home Page</h1>"
+    return render_template("home.html")
 
 @home_bp.route('/terms')
 def terms():

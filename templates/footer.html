@@ -1,0 +1,103 @@
+<footer class="bg-dark text-light">
+    <div class="container">
+        <div class="row g-4 justify-content-between">
+            <!-- Company Description -->
+            <div class="col-lg-4 col-md-6">
+                <h5 class="fw-bold mb-3 fs-4 text-primary">{{app_name}}</h5>
+                <p class="text-light fs-6 lh-base">
+                    Sản phẩm thuộc bộ phận công nghệ của {{company_name}},
+                    cung cấp giải pháp quản lý chiến lược, rút gọn nhân lực quảng cáo page
+                    và tài khoản quảng cáo.
+                </p>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="col-lg-4 col-md-6">
+                <h5 class="fw-bold mb-3 fs-4 text-primary">Liên hệ</h5>
+                <ul class="list-unstyled fs-6">
+                    <li class="mb-3">
+                        <span class="fw-bold text-light">{{company_name}}</span>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-id-card me-2 text-primary"></i>
+                        <span class="fw-semibold text-light">MST:</span> {{tax_number}}
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-phone me-2 text-primary"></i>
+                        <span class="fw-semibold text-light">SĐT:</span> {{phone_number}}
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                        <span class="fw-semibold text-light">ĐỊA CHỈ:</span> {{address}}
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-globe me-2 text-primary"></i>
+                        <span class="fw-semibold text-light">WEBSITE:</span>
+                        <a href="{{dns_web}}" target="_blank"
+                            class="text-light ms-1 text-decoration-none hover-opacity">
+                            {{dns_web}}
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-envelope me-2 text-primary"></i>
+                        <span class="fw-semibold text-light">MAIL:</span>
+                        <a href="mailto:info@congtythoitrangpony.com" class="text-light ms-1 text-decoration-none hover-opacity">
+                            {{contact_email}}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Additional Information -->
+            <div class="col-lg-4 col-md-6">
+                <h5 class="fw-bold mb-3 fs-4 text-primary">Thông tin thêm</h5>
+                <div class="text-light fs-6">
+                    <p class="mb-3 lh-base">
+                        Trang web được phát triển từ framework của NoirSteed để tối ưu hóa quy trình pháp quảng cáo facebook.
+                    </p>
+                    <p class="lh-base">
+                        Cung cấp công cụ tự động hóa giúp tiết kiệm thời gian và nâng cao
+                        hiệu quả chiến dịch quảng cáo.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="border-top border-secondary text-center">
+            <p class="text-light fs-6 copyright-text">
+                &copy; 2025 {{app_name}}. All Rights Reserved.
+            </p>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .container {
+        background-color: transparent;
+    }
+
+    .hover-opacity:hover {
+        opacity: 0.8;
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .text-primary {
+        color: #0d6efd !important;
+    }
+
+    .lh-base {
+        line-height: 1.6 !important;
+    }
+
+    /* Remove unnecessary padding and margin for copyright */
+    .copyright-text {
+        margin: 0;
+        padding: 10px 0;
+        font-size: 14px;
+    }
+
+    .border-top {
+        margin-top: 20px;
+    }
+</style>

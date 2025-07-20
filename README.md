@@ -15,7 +15,7 @@ source myenv/bin/activate
 * **Windows (CMD):**
 
 ```cmd
-myenv\Scripts\activate.bat
+myenv\Scripts\activate
 ```
 
 * **Windows (PowerShell):**
