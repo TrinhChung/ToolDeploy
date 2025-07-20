@@ -1,0 +1,197 @@
+/* Định dạng chung */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    color: #2c3e50;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Đảm bảo chiều cao tối thiểu bằng với viewport */
+}
+
+/* Thiết lập container */
+.container {
+    margin: 20px 0px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: none;
+    flex: 1;  /* Đảm bảo container mở rộng để đẩy footer xuống dưới */
+}
+
+/* Thông báo (Flash messages) */
+.flashes {
+    list-style-type: none;
+    padding: 0;
+}
+
+.flashes li {
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.flashes .success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.flashes .danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.flashes .info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* Nút lọc */
+.filter-btn {
+    display: flex !important;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive table */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Điều chỉnh kích thước button nhỏ */
+.btn-sm {
+    font-size: 14px;
+    padding: 8px 12px;
+}
+
+/* Định dạng bảng */
+.table {
+    font-size: 16px;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 12px 15px;
+    white-space: nowrap;
+}
+
+/* Điều chỉnh giao diện trên màn hình nhỏ */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 24px;
+        text-align: center;
+    }
+
+    .table th, .table td {
+        font-size: 14px;
+        padding: 8px;
+        white-space: normal;
+    }
+
+    .btn-sm {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .filter-btn {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* Điều chỉnh giao diện trên màn hình rất nhỏ */
+@media (max-width: 576px) {
+    .container {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .table th, .table td {
+        font-size: 12px;
+        padding: 5px;
+    }
+
+    .btn-sm {
+        font-size: 10px;
+        padding: 5px 8px;
+    }
+
+    .filter-btn {
+        gap: 5px;
+        flex-direction: column;
+    }
+}
+
+/* Navbar responsive */
+.navbar {
+    padding: 10px 20px;
+}
+
+.navbar-brand {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.navbar-toggler {
+    border: none;
+    outline: none;
+}
+
+/* Footer luôn ở dưới cùng */
+.footer {
+    text-align: center;
+    padding: 15px 0;
+    background-color: #2c3e50;
+    color: #ffffff;
+    font-size: 14px;
+    margin-top: auto;  /* Đẩy footer xuống khi nội dung ít */
+}
+
+/* Định dạng icon */
+.icon {
+    font-size: 18px;
+    margin-right: 5px;
+}
+
+/* Hiệu ứng hover cho bảng */
+.table-hover tbody tr:hover {
+    background-color: #f0f0f0;
+    transition: all 0.3s ease;
+}
+
+/* Thêm hiệu ứng cho nút */
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive font size cho tiêu đề */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 576px) {
+    h1 {
+        font-size: 20px;
+    }
+}
