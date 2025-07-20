@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Danh sách App Đã Deploy{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+	<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+		<h2 class="fw-bold mb-0">
+			<i class="fa fa-th-list text-primary me-2"></i>
+			Danh sách App Đã Deploy
+		</h2>
+		<a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
+			<i class="fa fa-plus"></i> Deploy App mới
+		</a>
+	</div>
+	<div class="table-responsive rounded shadow-sm bg-white">
+		<table class="table table-hover align-middle mb-0">
+			<thead class="table-light">
+				<tr>
+					<th style="width:40px;">#</th>
+					<th>Server</th>
+					<th>Domain</th>
+					<th>Subdomain</th>
+					<th>ENV</th>
+					<th>Status</th>
+					<th>Ghi chú</th>
+					<th>Ngày tạo</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for app, server, domain in deployed_apps %}
+				<tr>
+					<td class="text-muted small">{{ loop.index }}</td>
+					<td>{{ server.name }}</td>
+					<td>{{ domain.name }}</td>
+					<td>
+						{% if app.subdomain %}
+						<span class="badge bg-info">{{ app.subdomain }}</span>
+						{% else %}
+						<span class="text-secondary">-</span>
+						{% endif %}
+					</td>
+					<td>
+						<span style="max-width:200px;white-space:pre-line;display:inline-block;word-break:break-all;">
+							{{ app.env|default('-', true) }}
+						</span>
+					</td>
+					<td>
+						{% if app.status == 'active' %}
+						<span class="badge bg-success">Active</span>
+						{% elif app.status == 'pending' %}
+						<span class="badge bg-warning text-dark">Pending</span>
+						{% else %}
+						<span class="badge bg-secondary">{{ app.status }}</span>
+						{% endif %}
+					</td>
+					<td>{{ app.note or '-' }}</td>
+					<td>{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+				</tr>
+				{% endfor %}
+				{% if deployed_apps|length == 0 %}
+				<tr>
+					<td colspan="8" class="text-center text-muted py-4">
+						<i class="fa fa-exclamation-circle me-1"></i>
+						Chưa có app nào được deploy.
+					</td>
+				</tr>
+				{% endif %}
+			</tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}
