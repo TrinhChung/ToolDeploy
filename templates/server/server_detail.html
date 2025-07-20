@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+	<div class="row justify-content-center">
+		<div class="col-md-8 col-lg-6">
+			<div class="card shadow-lg rounded-4 border-0">
+				<div class="card-body">
+					<h3 class="card-title text-center mb-4 text-primary">
+						<i class="fa fa-server"></i> Chi tiết server
+					</h3>
+					<table class="table table-borderless mb-0">
+						<tr>
+							<th class="text-end" style="width: 40%;">Tên server:</th>
+							<td><span class="fw-bold">{{ server.name }}</span></td>
+						</tr>
+						<tr>
+							<th class="text-end">IP:</th>
+							<td><span class="badge bg-info fs-6">{{ server.ip }}</span></td>
+						</tr>
+						{% if is_admin %}
+						<tr>
+							<th class="text-end">Tài khoản quản trị:</th>
+							<td>
+								<span class="badge bg-secondary">{{ server.admin_username or '' }}</span>
+							</td>
+						</tr>
+						<tr>
+							<th class="text-end">Mật khẩu quản trị:</th>
+							<td>
+								<span class="badge bg-light text-dark">{{ server.admin_password or '' }}</span>
+							</td>
+						</tr>
+						<tr>
+							<th class="text-end">Tên DB:</th>
+							<td>
+								<span class="badge bg-primary">{{ server.db_name or '-' }}</span>
+							</td>
+						</tr>
+						<tr>
+							<th class="text-end">User DB:</th>
+							<td>
+								<span class="badge bg-success">{{ server.db_user or '-' }}</span>
+							</td>
+						</tr>
+						<tr>
+							<th class="text-end">Password DB:</th>
+							<td>
+								<span class="badge bg-light text-dark">{{ server.db_password or '-' }}</span>
+							</td>
+						</tr>
+						{% endif %}
+						<tr>
+							<th class="text-end">Ghi chú:</th>
+							<td>{{ server.note or '-' }}</td>
+						</tr>
+						<tr>
+							<th class="text-end">Số app đã deploy:</th>
+							<td>
+								<span class="badge bg-success fs-6">{{ server.deployed_apps|length }}</span>
+							</td>
+						</tr>
+					</table>
+					<div class="text-center mt-4">
+						<a href="{{ url_for('server.server_list') }}" class="btn btn-outline-secondary">
+							<i class="fa fa-arrow-left"></i> Quay lại danh sách
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

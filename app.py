@@ -11,6 +11,10 @@ from flask_login import LoginManager, current_user
 
 from util.until import format_datetime
 from models.user import User
+from models.domain import Domain
+from models.dns_record import DNSRecord
+from models.server import Server
+from models.deployed_app import DeployedApp
 
 load_dotenv()
 migrate = Migrate()
@@ -62,10 +66,12 @@ def create_app():
     from routes.home import home_bp
     from routes.auth import auth_bp
     from routes.admin import admin_bp
+    from routes.server import server_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(server_bp)
 
     # Kiểm soát truy cập: dùng Flask-Login, không cần kiểm tra "facebook_user_id" nữa
     @app.before_request

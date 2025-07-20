@@ -9,6 +9,8 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(200), nullable=False)
     is_active = db.Column(db.Boolean, default=False)  # Mới đăng ký thì chưa active
     is_admin = db.Column(db.Boolean, default=False)  # Quyền admin, mặc định user thường
+    
+    domains = db.relationship("Domain", back_populates="user", lazy=True)
 
     # Optional: property cho Flask-Login
     def get_id(self):

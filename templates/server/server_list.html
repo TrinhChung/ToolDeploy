@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h3 class="mb-0"><i class="fa fa-server text-primary"></i> Danh sách server</h3>
+		{% if is_admin %}
+		<a href="{{ url_for('server.add_server') }}" class="btn btn-primary">
+			<i class="fa fa-plus"></i> Thêm server mới
+		</a>
+		{% endif %}
+	</div>
+	<div class="card shadow rounded-3">
+		<div class="card-body p-0">
+			<div class="table-responsive">
+				<table class="table table-hover align-middle mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>#</th>
+							<th>Tên server</th>
+							<th>Địa chỉ IP</th>
+							<th>Số app đã deploy</th>
+							<th>Ghi chú</th>
+							{% if is_admin %}
+							<th>Quản trị</th>
+							<th>DB</th>
+							{% endif %}
+							<th style="min-width: 150px;">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for s in servers %}
+						<tr>
+							<td>{{ loop.index }}</td>
+							<td class="fw-bold">{{ s.name }}</td>
+							<td><span class="badge bg-info">{{ s.ip }}</span></td>
+							<td>
+								<span class="badge bg-success">{{ s.deployed_apps|length }}</span>
+							</td>
+							<td>{{ s.note or '' }}</td>
+							{% if is_admin %}
+							<td>
+								<span class="badge bg-secondary">{{ s.admin_username or '' }}</span>
+							</td>
+							<td>
+								<span class="badge bg-light text-dark">
+									{{ s.db_name or '-' }} / {{ s.db_user or '-' }}
+								</span>
+							</td>
+							{% endif %}
+							<td>
+								<a href="{{ url_for('server.server_detail', server_id=s.id) }}" class="btn btn-sm btn-outline-info me-1"
+									title="Xem chi tiết">
+									<i class="fa fa-eye"></i>
+								</a>
+								{% if is_admin %}
+								<a href="{{ url_for('server.edit_server', server_id=s.id) }}"
+									class="btn btn-sm btn-outline-warning me-1" title="Sửa">
+									<i class="fa fa-edit"></i>
+								</a>
+								<form method="post" action="{{ url_for('server.delete_server', server_id=s.id) }}"
+									style="display:inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa server này?')"
+									class="d-inline">
+									<button class="btn btn-sm btn-outline-danger" type="submit" title="Xóa">
+										<i class="fa fa-trash"></i>
+									</button>
+								</form>
+								{% endif %}
+							</td>
+						</tr>
+						{% endfor %}
+						{% if servers|length == 0 %}
+						<tr>
+							<td colspan="{% if is_admin %}8{% else %}6{% endif %}" class="text-center text-muted">
+								Không có server nào.
+							</td>
+						</tr>
+						{% endif %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

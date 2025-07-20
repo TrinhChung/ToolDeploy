@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Cập nhật server</h3>
+<form method="post">
+	{{ form.hidden_tag() }}
+	<div class="mb-3">
+		{{ form.name.label }} {{ form.name(class="form-control") }}
+	</div>
+	<div class="mb-3">
+		{{ form.ip.label }} {{ form.ip(class="form-control") }}
+	</div>
+	<div class="mb-3">
+		{{ form.note.label }} {{ form.note(class="form-control") }}
+	</div>
+	<button type="submit" class="btn btn-success">Lưu thay đổi</button>
+	<a href="{{ url_for('server.server_list') }}" class="btn btn-secondary">Hủy</a>
+</form>
+{% endblock %}

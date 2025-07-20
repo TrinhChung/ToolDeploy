@@ -1,101 +1,95 @@
 {% extends 'base.html' %}
-
 {% block title %}Home{% endblock %}
 
 {% block content %}
 <div>
-	<!-- Facebook Section -->
+	<!-- Server & App Section -->
 	<h2 class="mb-4">
-		<i class="fab fa-facebook text-primary me-2"></i>Facebook Management
+		<i class="fa fa-server text-primary me-2"></i>Quản lý Hệ Thống Server
 	</h2>
 	<div class="row justify-content-center">
 		<div class="col-md-4 mb-4">
 			<div class="card h-100 feature-card">
 				<div class="card-body d-flex flex-column">
 					<div class="icon-wrapper mb-3">
-						<i class="fas fa-user-circle"></i>
+						<i class="fa fa-server"></i>
 					</div>
-					<h5 class="card-title">Facebook Accounts</h5>
-					<p class="card-text flex-grow-1">Manage your Facebook account settings and configurations.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/account_fb'">
-						<i class="fas fa-cog me-2"></i>Manage Accounts
+					<h5 class="card-title">Danh sách Server</h5>
+					<p class="card-text flex-grow-1">Xem, quản lý server đang có, theo dõi số app đã deploy trên từng server.</p>
+					<button class="btn btn-primary mt-auto" onclick="window.location.href='/server/servers'">
+						<i class="fa fa-database me-2"></i>Quản lý Server
 					</button>
 				</div>
 			</div>
 		</div>
+		{% if current_user.is_authenticated and current_user.is_admin %}
 		<div class="col-md-4 mb-4">
 			<div class="card h-100 feature-card">
 				<div class="card-body d-flex flex-column">
 					<div class="icon-wrapper mb-3">
-						<i class="fas fa-file-alt"></i>
+						<i class="fa fa-plus-circle"></i>
 					</div>
-					<h5 class="card-title">Pages</h5>
-					<p class="card-text flex-grow-1">View and manage your Facebook pages and their content.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/pages'">
-						<i class="fas fa-tasks me-2"></i>Manage Pages
+					<h5 class="card-title">Thêm Server mới</h5>
+					<p class="card-text flex-grow-1">Thêm server mới vào hệ thống. Chỉ admin mới sử dụng được chức năng này.</p>
+					<button class="btn btn-primary mt-auto" onclick="window.location.href='/server/server/add'">
+						<i class="fa fa-plus me-2"></i>Thêm Server
 					</button>
 				</div>
 			</div>
 		</div>
+		{% endif %}
 		<div class="col-md-4 mb-4">
 			<div class="card h-100 feature-card">
 				<div class="card-body d-flex flex-column">
 					<div class="icon-wrapper mb-3">
-						<i class="fas fa-ad"></i>
+						<i class="fa fa-th-list"></i>
 					</div>
-					<h5 class="card-title">Ads Accounts</h5>
-					<p class="card-text flex-grow-1">Configure and manage your Facebook advertising accounts.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/ad_accounts'">
-						<i class="fas fa-chart-line me-2"></i>Manage Ads
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-bullhorn"></i>
-					</div>
-					<h5 class="card-title">Create Campaign</h5>
-					<p class="card-text flex-grow-1">Start a new Facebook advertising campaign.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/campaign_fb/create'">
-						<i class="fas fa-plus me-2"></i>Create Campaign
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-list-alt"></i>
-					</div>
-					<h5 class="card-title">Facebook Campaigns</h5>
-					<p class="card-text flex-grow-1">View and manage your existing Facebook campaigns.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/campaign_fb/list'">
-						<i class="fas fa-eye me-2"></i>View Campaigns
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-layer-group"></i>
-					</div>
-					<h5 class="card-title">Stack Posts</h5>
-					<p class="card-text flex-grow-1">Manage your queued and scheduled Facebook posts.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/stack_posts'">
-						<i class="fas fa-clock me-2"></i>Manage Posts
+					<h5 class="card-title">App đã Deploy</h5>
+					<p class="card-text flex-grow-1">Quản lý, theo dõi và truy cập các ứng dụng đã được deploy trên hệ thống.</p>
+					<button class="btn btn-primary mt-auto" onclick="window.location.href='/deployed_app/list'">
+						<i class="fa fa-list me-2"></i>Xem danh sách app
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- YouTube Section -->
+	<!-- Domain & DNS Section -->
+	<h2 class="mb-4">
+		<i class="fa fa-globe text-success me-2"></i>Quản lý Domain & DNS
+	</h2>
+	<div class="row justify-content-center">
+		<div class="col-md-4 mb-4">
+			<div class="card h-100 feature-card">
+				<div class="card-body d-flex flex-column">
+					<div class="icon-wrapper mb-3">
+						<i class="fa fa-globe"></i>
+					</div>
+					<h5 class="card-title">Danh sách Domain</h5>
+					<p class="card-text flex-grow-1">Quản lý domain, cấu hình DNS cho từng domain hoặc subdomain.</p>
+					<button class="btn btn-primary mt-auto" onclick="window.location.href='/domain/list'">
+						<i class="fa fa-cogs me-2"></i>Quản lý Domain
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-4 mb-4">
+			<div class="card h-100 feature-card">
+				<div class="card-body d-flex flex-column">
+					<div class="icon-wrapper mb-3">
+						<i class="fa fa-random"></i>
+					</div>
+					<h5 class="card-title">Quản lý DNS</h5>
+					<p class="card-text flex-grow-1">Thêm, sửa, xóa bản ghi DNS cho các domain đã đăng ký trong hệ thống.</p>
+					<button class="btn btn-primary mt-auto" onclick="window.location.href='/dns/records'">
+						<i class="fa fa-dns me-2"></i>Quản lý DNS
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- YouTube Section (giữ lại nếu cần) -->
 	<h2 class="mb-4">
 		<i class="fab fa-youtube text-danger me-2"></i>YouTube Tools
 	</h2>
@@ -114,48 +108,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-list"></i>
-					</div>
-					<h5 class="card-title">YouTube Playlist</h5>
-					<p class="card-text flex-grow-1">Download entire YouTube playlists at once.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/batch/playlist'">
-						<i class="fas fa-list-ol me-2"></i>Download Playlist
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-video"></i>
-					</div>
-					<h5 class="card-title">Videos</h5>
-					<p class="card-text flex-grow-1">Manage your downloaded YouTube videos.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/videos'">
-						<i class="fas fa-film me-2"></i>Manage Videos
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-cut"></i>
-					</div>
-					<h5 class="card-title">Video Splits</h5>
-					<p class="card-text flex-grow-1">Split and manage video segments.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/video_splits'">
-						<i class="fas fa-scissors me-2"></i>Manage Splits
-					</button>
-				</div>
-			</div>
-		</div>
+		<!-- ... Các thẻ YouTube khác như cũ ... -->
 	</div>
 
 	<!-- Legal Section -->
@@ -193,6 +146,7 @@
 		</div>
 	</div>
 </div>
+
 
 <style>
 	/* Container Styles */

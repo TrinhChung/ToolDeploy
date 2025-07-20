@@ -16,7 +16,6 @@
 				background-color: #212529;
 			}
 
-			/* Cập nhật styles cho header */
 			.navbar-brand {
 				display: flex;
 				align-items: center;
@@ -25,7 +24,6 @@
 
 			.navbar-brand img {
 				height: 32px;
-				/* Điều chỉnh chiều cao logo */
 				width: auto;
 				object-fit: contain;
 			}
@@ -34,28 +32,21 @@
 				width: 40px;
 				height: 40px;
 				background-color: #4267B2;
-				/* Màu nền xanh Facebook */
 				color: white;
-				/* Màu chữ trắng */
 				font-weight: bold;
 				font-size: 24px;
 				text-align: center;
 				line-height: 40px;
 				border-radius: 0;
-				/* Vuông góc */
 				display: inline-block;
 			}
 
-
-			/* Fix cho responsive */
 			@media (max-width: 576px) {
 				.navbar-brand img {
 					height: 28px;
-					/* Giảm kích thước logo trên mobile */
 				}
 			}
 
-			/* Fix cho dropdown trên mobile */
 			@media (max-width: 991.98px) {
 				.navbar-nav .dropdown-menu {
 					position: static;
@@ -63,7 +54,6 @@
 				}
 			}
 
-			/* Đảm bảo dropdown hiển thị đúng trên desktop */
 			@media (min-width: 992px) {
 				.dropdown:hover .dropdown-menu {
 					display: block;
@@ -89,26 +79,17 @@
 							<a class="nav-link" href="/">Home</a>
 						</li>
 
-						<!-- Facebook Dropdown -->
+						<!-- Quản lý Server Dropdown -->
 						<li class="nav-item dropdown">
-							<a class="nav-link dropdown-toggle" href="#" id="facebookDropdown" role="button" data-bs-toggle="dropdown"
+							<a class="nav-link dropdown-toggle" href="#" id="serverDropdown" role="button" data-bs-toggle="dropdown"
 								aria-expanded="false">
-								Facebook
+								Quản lý Server
 							</a>
-							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="facebookDropdown">
-								<li><a class="dropdown-item" href="/account_fb">Facebook
-										Accounts</a></li>
-								<li><a class="dropdown-item" href="/pages">Pages</a></li>
-								<li><a class="dropdown-item" href="/ad_accounts">Ads Accounts</a></li>
-								<li><a class="dropdown-item" href="/campaign_fb/create">Create
-										Campaign</a></li>
-								<li><a class="dropdown-item" href="/campaign_fb/list">Facebook
-										Campaigns</a></li>
-								<li><a class="dropdown-item" href="/stack_posts">Stack Posts</a></li>
-								<li>
-									<hr class="dropdown-divider">
-								</li>
-								<li><a class="dropdown-item" target="_blank" href="/permissions">Facebook Permissions</a></li>
+							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="serverDropdown">
+								<li><a class="dropdown-item" href="/server/servers">Danh sách Server</a></li>
+								{% if current_user.is_authenticated and current_user.is_admin %}
+								<li><a class="dropdown-item" href="/server/server/add">Thêm Server mới</a></li>
+								{% endif %}
 							</ul>
 						</li>
 
@@ -123,7 +104,6 @@
 								<li>
 									<a class="dropdown-item" href="{{ url_for('admin.manage_users') }}">Quản lý User</a>
 								</li>
-								<!-- Bạn có thể bổ sung các chức năng admin khác ở đây -->
 								<li>
 									<hr class="dropdown-divider">
 								</li>
@@ -141,8 +121,7 @@
 								Legal
 							</a>
 							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="legalDropdown">
-								<li><a class="dropdown-item" target="_blank" href="/polices">Privacy
-										Policy</a></li>
+								<li><a class="dropdown-item" target="_blank" href="/polices">Privacy Policy</a></li>
 								<li><a class="dropdown-item" target="_blank" href="/permissions">Permissions</a></li>
 							</ul>
 						</li>
@@ -162,19 +141,16 @@
 			</nav>
 		</header>
 
-		<!-- jQuery first (optional, but recommended for better compatibility) -->
+		<!-- jQuery (optional, recommended for compatibility) -->
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 		<!-- Popper.js -->
 		<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-
 		<!-- Bootstrap JS -->
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-
-		<!-- Script để xử lý dropdown -->
+		<!-- Script xử lý dropdown -->
 		<script>
 			document.addEventListener('DOMContentLoaded', function () {
-				// Xử lý dropdown trên mobile
+				// Dropdown trên mobile
 				var dropdowns = document.querySelectorAll('.dropdown-toggle');
 				dropdowns.forEach(function (dropdown) {
 					dropdown.addEventListener('click', function (e) {
@@ -185,8 +161,7 @@
 						}
 					});
 				});
-
-				// Xử lý hover trên desktop
+				// Dropdown hover trên desktop
 				if (window.innerWidth >= 992) {
 					var dropdownItems = document.querySelectorAll('.dropdown');
 					dropdownItems.forEach(function (item) {
