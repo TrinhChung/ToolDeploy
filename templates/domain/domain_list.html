@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-4">
-	<div class="row mb-4">
+	<div class="row mb-4 align-items-center">
 		<div class="col-lg-8 col-md-6">
 			<h3 class="fw-bold mb-0">
 				<i class="fa fa-globe me-2 text-primary"></i>
@@ -20,38 +20,59 @@
 			{% endif %}
 		</div>
 	</div>
-	<div class="table-responsive rounded shadow-sm">
-		<table class="table table-hover table-borderless align-middle mb-0">
+	<div class="table-responsive rounded shadow-sm bg-white px-1">
+		<table class="table table-hover align-middle mb-0" style="line-height: 1.3;">
 			<thead class="table-light">
-				<tr class="align-middle">
+				<tr>
 					<th style="width:40px;">#</th>
 					<th>Domain</th>
-					<th>Status</th>
-					<th>Zone ID</th>
-					<th class="text-center" style="width:110px;">Xem DNS</th>
+					<th style="min-width:90px;">Status</th>
+					<th style="max-width:220px;">Zone ID</th>
+					<th class="text-center" style="width:200px;">Chức năng</th>
 				</tr>
 			</thead>
 			<tbody>
 				{% for d in domains %}
-				<tr class="align-middle">
-					<td class="text-muted">{{ loop.index }}</td>
+				<tr>
+					<td class="text-muted small">{{ loop.index }}</td>
 					<td class="fw-semibold">{{ d.name }}</td>
 					<td>
 						{% if d.status == 'active' %}
-						<span class="badge bg-success bg-opacity-75 px-3 py-2">Active</span>
+						<span class="badge bg-success bg-opacity-75 px-3 py-2 rounded-pill">Active</span>
 						{% elif d.status == 'pending' %}
-						<span class="badge bg-warning text-dark bg-opacity-75 px-3 py-2">Pending</span>
+						<span class="badge bg-warning text-dark bg-opacity-75 px-3 py-2 rounded-pill">Pending</span>
 						{% else %}
-						<span class="badge bg-secondary bg-opacity-75 px-3 py-2">{{ d.status }}</span>
+						<span class="badge bg-secondary bg-opacity-75 px-3 py-2 rounded-pill">{{ d.status }}</span>
 						{% endif %}
 					</td>
-					<td style="font-family:monospace; font-size:0.96em;">{{ d.zone_id }}</td>
-					<td class="text-center">
-						<a href="{{ url_for('dns.dns_records', domain_id=d.id) }}"
-							class="btn btn-sm btn-outline-primary view-dns-btn" title="Xem & quản lý bản ghi DNS">
-							<i class="fa fa-eye"></i>
-							<span class="d-none d-lg-inline ms-1">Xem DNS</span>
-						</a>
+					<td style="font-family:monospace; font-size:0.96em; max-width:220px; overflow:hidden;">
+						<span class="d-inline-block text-truncate w-100" style="max-width:200px; line-height: 1.3;"
+							title="{{ d.zone_id }}">
+							{{ d.zone_id }}
+						</span>
+					</td>
+					<td class="text-center align-middle">
+						<div class="d-flex flex-wrap justify-content-center gap-1">
+							<a href="{{ url_for('dns.dns_records', domain_id=d.id) }}"
+								class="btn btn-sm btn-outline-primary view-dns-btn" title="Xem & quản lý bản ghi DNS">
+								<i class="fa fa-eye"></i> <span class="d-none d-lg-inline ms-1">DNS</span>
+							</a>
+							{% if d.status != 'active' %}
+							<a href="{{ url_for('domain.verify_domain', domain_id=d.id) }}" class="btn btn-sm btn-outline-info">
+								<i class="fa fa-check"></i> <span class="d-none d-lg-inline">Xác thực</span>
+							</a>
+							{% endif %}
+							{% if is_admin %}
+							<form method="POST" action="{{ url_for('domain.delete_domain', domain_id=d.id) }}" style="display:inline;"
+								class="d-inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa domain này?');">
+								{{ form.csrf_token }}
+								<button type="submit" class="btn btn-sm btn-outline-danger">
+									<i class="fa fa-trash"></i>
+									<span class="d-none d-lg-inline ms-1">Xóa</span>
+								</button>
+							</form>
+							{% endif %}
+						</div>
 					</td>
 				</tr>
 				{% endfor %}
@@ -67,18 +88,29 @@
 		</table>
 	</div>
 </div>
-
 <style>
-	.view-dns-btn:hover {
-		box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
-		border-color: #0d6efd !important;
-		background-color: #eaf4ff;
-	}
-
 	.table-responsive {
 		background: #fff;
 		border-radius: 12px;
-		padding: 0.5rem;
+		padding: 0.7rem;
+	}
+
+	.table td,
+	.table th {
+		vertical-align: middle !important;
+		line-height: 1.3 !important;
+	}
+
+	.view-dns-btn:hover,
+	.btn-outline-info:hover,
+	.btn-outline-danger:hover {
+		box-shadow: 0 2px 10px rgba(33, 150, 243, 0.13);
+	}
+
+	.text-truncate {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	@media (max-width: 576px) {
@@ -86,6 +118,10 @@
 		.table th,
 		.table td {
 			font-size: 0.98em;
+		}
+
+		.d-flex.gap-1>* {
+			margin-bottom: 3px;
 		}
 	}
 </style>

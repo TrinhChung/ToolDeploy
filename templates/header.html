@@ -78,7 +78,7 @@
 						<li class="nav-item">
 							<a class="nav-link" href="/">Home</a>
 						</li>
-
+					
 						<!-- Quản lý Server Dropdown -->
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" id="serverDropdown" role="button" data-bs-toggle="dropdown"
@@ -92,7 +92,21 @@
 								{% endif %}
 							</ul>
 						</li>
-
+					
+						<!-- Quản lý Domain & DNS Dropdown -->
+						<li class="nav-item dropdown">
+							<a class="nav-link dropdown-toggle" href="#" id="domainDropdown" role="button" data-bs-toggle="dropdown"
+								aria-expanded="false">
+								Quản lý Domain
+							</a>
+							<ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="domainDropdown">
+								<li><a class="dropdown-item" href="/domain/list">Danh sách Domain</a></li>
+								{% if current_user.is_authenticated and current_user.is_admin %}
+								<li><a class="dropdown-item" href="/domain/add">Thêm Domain mới</a></li>
+								{% endif %}
+							</ul>
+						</li>
+					
 						{% if current_user.is_authenticated and current_user.is_admin %}
 						<!-- Admin Dropdown -->
 						<li class="nav-item dropdown">
@@ -113,7 +127,7 @@
 							</ul>
 						</li>
 						{% endif %}
-
+					
 						<!-- Legal Dropdown -->
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" href="#" id="legalDropdown" role="button" data-bs-toggle="dropdown"
@@ -125,7 +139,7 @@
 								<li><a class="dropdown-item" target="_blank" href="/permissions">Permissions</a></li>
 							</ul>
 						</li>
-
+					
 						<!-- Authentication -->
 						{% if current_user.is_authenticated %}
 						<li class="nav-item">

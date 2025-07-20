@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Xác Thực Domain{% endblock %}
+
+{% block extra_css %}
+<style>
+	.alert {
+		font-size: 16px;
+	}
+
+	.step-title {
+		font-weight: bold;
+		margin-top: 20px;
+		color: #3a74e7;
+	}
+
+	.nameserver,
+	.nameserver-current {
+		background: #e9ecef;
+		padding: 10px 16px;
+		border-radius: 6px;
+		font-family: monospace;
+		font-size: 1.08em;
+	}
+
+	.nameserver-current {
+		background: #ffeaea;
+		color: #c0392b;
+	}
+
+	.breadcrumb {
+		background: #f8f9fa;
+		padding: 10px 18px;
+		border-radius: 5px;
+		font-size: 15px;
+	}
+
+	.breadcrumb a {
+		text-decoration: none;
+		color: #007bff;
+	}
+
+	.breadcrumb a:hover {
+		text-decoration: underline;
+	}
+
+	.btn-block {
+		width: 100%;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 670px;">
+	<!-- Breadcrumb Navigation -->
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item"><a href="{{ url_for('home.home') }}">Trang chủ</a></li>
+			<li class="breadcrumb-item"><a href="{{ url_for('domain.list_domain') }}">Danh sách Domain</a></li>
+			<li class="breadcrumb-item active" aria-current="page">Xác thực Domain</li>
+		</ol>
+	</nav>
+
+	<div class="text-center mb-4">
+		<h2 class="fw-bold mb-1">
+			<i class="fa fa-globe text-primary me-2"></i>
+			Xác Thực Domain
+		</h2>
+		<div>
+			<span class="badge bg-{{ 'success' if domain.status=='active' else 'warning text-dark' }}">
+				{{ "Đã xác thực" if domain.status=='active' else "Chưa xác thực" }}
+			</span>
+		</div>
+	</div>
+
+	<div class="alert alert-info mb-4">
+		<strong>Bước cuối cùng để hoàn tất kết nối domain:</strong>
+		<br>
+		Hãy cập nhật Nameserver của bạn theo hướng dẫn bên dưới. Điều này sẽ giúp Cloudflare bảo vệ, tăng tốc website, đồng
+		thời kiểm soát các bản ghi DNS an toàn hơn.<br>
+		<small class="text-secondary d-block mt-2">
+			<b>Chú ý:</b> Việc xác thực domain có thể mất vài phút đến vài giờ tùy nhà cung cấp. Nếu trạng thái vẫn là "Chưa
+			xác thực", hãy kiên nhẫn chờ hoặc bấm nút xác thực lại.
+		</small>
+	</div>
+
+	<h5 class="step-title">1. Đăng nhập vào nơi quản lý domain</h5>
+	<p>
+		Truy cập trang quản lý domain của bạn (như Tenten, Namecheap, GoDaddy, v.v.).
+	</p>
+
+	<h5 class="step-title">2. Tắt DNSSEC (nếu đang bật)</h5>
+	<p>
+		Nếu domain đã bật DNSSEC, hãy tắt tính năng này trước. Sau khi domain đã hoạt động với Cloudflare, bạn có thể bật
+		lại nếu muốn.
+	</p>
+
+	<h5 class="step-title">3. Thay thế Nameserver cũ bằng Nameserver Cloudflare</h5>
+	<p>
+		Vào phần <strong>Cấu hình Nameserver</strong> hoặc <b>Quản lý DNS</b>, xoá toàn bộ nameserver hiện tại (nếu có), sau
+		đó nhập <b>đúng 2 dòng sau</b>:
+	</p>
+	<div class="nameserver mb-3">
+		{% for ns in nameservers %}
+		{{ ns }}<br>
+		{% endfor %}
+	</div>
+	{% if current_nameservers %}
+	<div class="mb-3">
+		<span class="fw-bold text-danger">Nameserver hiện tại cần xoá:</span>
+		<div class="nameserver-current">
+			{% for ns in current_nameservers %}
+			{{ ns }}<br>
+			{% endfor %}
+		</div>
+	</div>
+	{% endif %}
+
+	<h5 class="step-title">4. Lưu thay đổi &amp; chờ xác thực</h5>
+	<p>
+		Sau khi cập nhật, hãy lưu lại cấu hình. Quá trình xác thực có thể mất từ <b>5 phút đến 48 giờ</b> (đa số dưới 2h).
+	</p>
+
+	{% if domain.status != "active" %}
+	<form method="POST" class="my-4">
+		{{ form.csrf_token }}
+		<button type="submit" class="btn btn-success btn-lg btn-block">
+			<i class="fa fa-check"></i> Tôi đã cập nhật Nameservers &mdash; Xác thực lại
+		</button>
+	</form>
+	{% else %}
+	<div class="alert alert-success mt-4">
+		<i class="fa fa-check-circle"></i>
+		<strong>Domain của bạn đã xác thực thành công trên Cloudflare!</strong>
+	</div>
+	{% endif %}
+
+	<div class="mt-3">
+		<a href="{{ url_for('domain.list_domain') }}" class="btn btn-outline-secondary">
+			<i class="fa fa-arrow-left"></i> Quay lại danh sách Domain
+		</a>
+	</div>
+</div>
+{% endblock %}
