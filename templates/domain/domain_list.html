@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h3><i class="fa fa-globe"></i> Danh sách Domain</h3>
+		<div>
+			{% if is_admin %}
+			<a href="{{ url_for('domain.add_domain') }}" class="btn btn-primary me-2">
+				<i class="fa fa-plus"></i> Thêm Domain
+			</a>
+			<a href="{{ url_for('domain.sync_cf') }}" class="btn btn-outline-info"
+				onclick="return confirm('Bạn chắc chắn muốn đồng bộ lại domain từ Cloudflare?')">
+				<i class="fa fa-sync-alt"></i> Đồng bộ domain
+			</a>
+			{% endif %}
+		</div>
+	</div>
+	<table class="table table-hover align-middle">
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>Domain</th>
+				<th>Status</th>
+				<th>Zone ID</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for d in domains %}
+			<tr>
+				<td>{{ loop.index }}</td>
+				<td>{{ d.name }}</td>
+				<td>
+					{% if d.status == 'active' %}
+					<span class="badge bg-success">Active</span>
+					{% elif d.status == 'pending' %}
+					<span class="badge bg-warning text-dark">Pending</span>
+					{% else %}
+					<span class="badge bg-secondary">{{ d.status }}</span>
+					{% endif %}
+				</td>
+				<td style="font-family:monospace;">{{ d.zone_id }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+{% endblock %}

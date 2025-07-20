@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+	<h3 class="mb-3"><i class="fa fa-plus"></i> Thêm Domain mới</h3>
+	<form method="post">
+		{{ form.hidden_tag() }}
+		<div class="mb-3">
+			{{ form.name.label(class="form-label") }}
+			{{ form.name(class="form-control") }}
+		</div>
+		<button class="btn btn-success">{{ form.submit.label.text }}</button>
+		<a href="{{ url_for('domain.list_domain') }}" class="btn btn-outline-secondary">Huỷ</a>
+	</form>
+</div>
+{% endblock %}
