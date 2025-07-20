@@ -2,149 +2,34 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div>
-	<!-- Server & App Section -->
-	<h2 class="mb-4">
-		<i class="fa fa-server text-primary me-2"></i>Quản lý Hệ Thống Server
-	</h2>
-	<div class="row justify-content-center">
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fa fa-server"></i>
+<div class="container py-4">
+	{% for section in home_sections %}
+	<div class="section-container mb-5">
+		<h2 class="section-title mb-4">
+			<i class="fa {{ section.icon }} me-2"></i>{{ section.title }}
+		</h2>
+		<div class="row g-4">
+			{% for f in section.features %}
+			{% if not f.admin_only or (current_user.is_authenticated and current_user.is_admin) %}
+			<div class="col-md-4">
+				<div class="card h-100 feature-card">
+					<div class="card-body d-flex flex-column">
+						<div class="icon-wrapper mb-3">
+							<i class="fa {{ f.icon }}"></i>
+						</div>
+						<h5 class="card-title">{{ f.title }}</h5>
+						<p class="card-text flex-grow-1">{{ f.desc }}</p>
+						<a class="btn btn-primary mt-auto" href="{{ f.url }}">
+							<i class="fa {{ f.btn_icon }} me-2"></i>{{ f.btn }}
+						</a>
 					</div>
-					<h5 class="card-title">Danh sách Server</h5>
-					<p class="card-text flex-grow-1">Xem, quản lý server đang có, theo dõi số app đã deploy trên từng server.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/server/servers'">
-						<i class="fa fa-database me-2"></i>Quản lý Server
-					</button>
 				</div>
 			</div>
-		</div>
-		{% if current_user.is_authenticated and current_user.is_admin %}
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fa fa-plus-circle"></i>
-					</div>
-					<h5 class="card-title">Thêm Server mới</h5>
-					<p class="card-text flex-grow-1">Thêm server mới vào hệ thống. Chỉ admin mới sử dụng được chức năng này.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/server/server/add'">
-						<i class="fa fa-plus me-2"></i>Thêm Server
-					</button>
-				</div>
-			</div>
-		</div>
-		{% endif %}
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fa fa-th-list"></i>
-					</div>
-					<h5 class="card-title">App đã Deploy</h5>
-					<p class="card-text flex-grow-1">Quản lý, theo dõi và truy cập các ứng dụng đã được deploy trên hệ thống.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/deployed_app/list'">
-						<i class="fa fa-list me-2"></i>Xem danh sách app
-					</button>
-				</div>
-			</div>
+			{% endif %}
+			{% endfor %}
 		</div>
 	</div>
-
-	<!-- Domain & DNS Section -->
-	<h2 class="mb-4">
-		<i class="fa fa-globe text-success me-2"></i>Quản lý Domain & DNS
-	</h2>
-	<div class="row justify-content-center">
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fa fa-globe"></i>
-					</div>
-					<h5 class="card-title">Danh sách Domain</h5>
-					<p class="card-text flex-grow-1">Quản lý domain, cấu hình DNS cho từng domain hoặc subdomain.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/domain/list'">
-						<i class="fa fa-cogs me-2"></i>Quản lý Domain
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fa fa-random"></i>
-					</div>
-					<h5 class="card-title">Quản lý DNS</h5>
-					<p class="card-text flex-grow-1">Thêm, sửa, xóa bản ghi DNS cho các domain đã đăng ký trong hệ thống.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/dns/records'">
-						<i class="fa fa-dns me-2"></i>Quản lý DNS
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- YouTube Section (giữ lại nếu cần) -->
-	<h2 class="mb-4">
-		<i class="fab fa-youtube text-danger me-2"></i>YouTube Tools
-	</h2>
-	<div class="row justify-content-center">
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-download"></i>
-					</div>
-					<h5 class="card-title">Download Videos</h5>
-					<p class="card-text flex-grow-1">Download individual YouTube videos by URL.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/download-url'">
-						<i class="fas fa-arrow-down me-2"></i>Download Video
-					</button>
-				</div>
-			</div>
-		</div>
-		<!-- ... Các thẻ YouTube khác như cũ ... -->
-	</div>
-
-	<!-- Legal Section -->
-	<h2 class="mb-4">
-		<i class="fas fa-balance-scale text-success me-2"></i>Legal Information
-	</h2>
-	<div class="row justify-content-center">
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-shield-alt"></i>
-					</div>
-					<h5 class="card-title">Privacy Policy</h5>
-					<p class="card-text flex-grow-1">View our privacy policy and data handling practices.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/polices'">
-						<i class="fas fa-file-contract me-2"></i>View Policy
-					</button>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4 mb-4">
-			<div class="card h-100 feature-card">
-				<div class="card-body d-flex flex-column">
-					<div class="icon-wrapper mb-3">
-						<i class="fas fa-key"></i>
-					</div>
-					<h5 class="card-title">Permissions</h5>
-					<p class="card-text flex-grow-1">View and manage application permissions.</p>
-					<button class="btn btn-primary mt-auto" onclick="window.location.href='/permissions'">
-						<i class="fas fa-lock me-2"></i>View Permissions
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	{% endfor %}
 </div>
 
 
