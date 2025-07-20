@@ -1,47 +1,92 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-4">
-	<div class="d-flex justify-content-between align-items-center mb-3">
-		<h3><i class="fa fa-globe"></i> Danh sách Domain</h3>
-		<div>
+	<div class="row mb-4">
+		<div class="col-lg-8 col-md-6">
+			<h3 class="fw-bold mb-0">
+				<i class="fa fa-globe me-2 text-primary"></i>
+				Danh sách Domain
+			</h3>
+		</div>
+		<div class="col-lg-4 col-md-6 text-md-end text-start mt-3 mt-md-0">
 			{% if is_admin %}
-			<a href="{{ url_for('domain.add_domain') }}" class="btn btn-primary me-2">
+			<a href="{{ url_for('domain.add_domain') }}" class="btn btn-primary me-2 mb-2">
 				<i class="fa fa-plus"></i> Thêm Domain
 			</a>
-			<a href="{{ url_for('domain.sync_cf') }}" class="btn btn-outline-info"
+			<a href="{{ url_for('domain.sync_cf') }}" class="btn btn-outline-info mb-2"
 				onclick="return confirm('Bạn chắc chắn muốn đồng bộ lại domain từ Cloudflare?')">
 				<i class="fa fa-sync-alt"></i> Đồng bộ domain
 			</a>
 			{% endif %}
 		</div>
 	</div>
-	<table class="table table-hover align-middle">
-		<thead>
-			<tr>
-				<th>#</th>
-				<th>Domain</th>
-				<th>Status</th>
-				<th>Zone ID</th>
-			</tr>
-		</thead>
-		<tbody>
-			{% for d in domains %}
-			<tr>
-				<td>{{ loop.index }}</td>
-				<td>{{ d.name }}</td>
-				<td>
-					{% if d.status == 'active' %}
-					<span class="badge bg-success">Active</span>
-					{% elif d.status == 'pending' %}
-					<span class="badge bg-warning text-dark">Pending</span>
-					{% else %}
-					<span class="badge bg-secondary">{{ d.status }}</span>
-					{% endif %}
-				</td>
-				<td style="font-family:monospace;">{{ d.zone_id }}</td>
-			</tr>
-			{% endfor %}
-		</tbody>
-	</table>
+	<div class="table-responsive rounded shadow-sm">
+		<table class="table table-hover table-borderless align-middle mb-0">
+			<thead class="table-light">
+				<tr class="align-middle">
+					<th style="width:40px;">#</th>
+					<th>Domain</th>
+					<th>Status</th>
+					<th>Zone ID</th>
+					<th class="text-center" style="width:110px;">Xem DNS</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for d in domains %}
+				<tr class="align-middle">
+					<td class="text-muted">{{ loop.index }}</td>
+					<td class="fw-semibold">{{ d.name }}</td>
+					<td>
+						{% if d.status == 'active' %}
+						<span class="badge bg-success bg-opacity-75 px-3 py-2">Active</span>
+						{% elif d.status == 'pending' %}
+						<span class="badge bg-warning text-dark bg-opacity-75 px-3 py-2">Pending</span>
+						{% else %}
+						<span class="badge bg-secondary bg-opacity-75 px-3 py-2">{{ d.status }}</span>
+						{% endif %}
+					</td>
+					<td style="font-family:monospace; font-size:0.96em;">{{ d.zone_id }}</td>
+					<td class="text-center">
+						<a href="{{ url_for('dns.dns_records', domain_id=d.id) }}"
+							class="btn btn-sm btn-outline-primary view-dns-btn" title="Xem & quản lý bản ghi DNS">
+							<i class="fa fa-eye"></i>
+							<span class="d-none d-lg-inline ms-1">Xem DNS</span>
+						</a>
+					</td>
+				</tr>
+				{% endfor %}
+				{% if domains|length == 0 %}
+				<tr>
+					<td colspan="5" class="text-center text-muted py-4">
+						<i class="fa fa-exclamation-circle me-1"></i>
+						Chưa có domain nào trong hệ thống.
+					</td>
+				</tr>
+				{% endif %}
+			</tbody>
+		</table>
+	</div>
 </div>
+
+<style>
+	.view-dns-btn:hover {
+		box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+		border-color: #0d6efd !important;
+		background-color: #eaf4ff;
+	}
+
+	.table-responsive {
+		background: #fff;
+		border-radius: 12px;
+		padding: 0.5rem;
+	}
+
+	@media (max-width: 576px) {
+
+		.table th,
+		.table td {
+			font-size: 0.98em;
+		}
+	}
+</style>
 {% endblock %}

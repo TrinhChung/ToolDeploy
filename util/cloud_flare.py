@@ -71,62 +71,40 @@ def get_cloudflare_nameservers(zone_id):
 
 # ========== DNS RECORD ==========
 def get_dns_records(zone_id):
-    """Lấy danh sách DNS records từ Cloudflare và đồng bộ vào DB (admin only)."""
     _admin_guard()
-    try:
-        response = requests.get(
-            f"{BASE_URL}/zones/{zone_id}/dns_records", headers=headers
-        )
-        response_data = response.json()
-        if response.status_code != 200 or not response_data.get("success", False):
-            return {
-                "success": False,
-                "error": f"Failed to fetch DNS records: {response_data.get('errors', 'Unknown error')}",
-            }
-        records_data = response_data.get("result", [])
-        if not records_data:
-            return {"success": False, "error": "No DNS records found for this zone."}
-        first_record_name = records_data[0].get("name", None)
-        if not first_record_name:
-            return {
-                "success": False,
-                "error": "Invalid response: missing 'name' field.",
-            }
-        zone_name = extract_base_domain(first_record_name)
-        domain = Domain.query.filter_by(name=zone_name).first()
-        if not domain:
-            return {
-                "success": False,
-                "error": f"Domain '{zone_name}' not found in database.",
-            }
-        # Cập nhật hoặc thêm DNS records
-        for record in records_data:
-            existing_record = DNSRecord.query.filter_by(
-                domain_id=domain.id, name=record["name"], record_type=record["type"]
-            ).first()
-            if existing_record:
-                existing_record.content = record["content"]
-                existing_record.ttl = record["ttl"]
-                existing_record.proxied = record["proxied"]
-            else:
-                new_record = DNSRecord(
-                    domain_id=domain.id,
-                    record_type=record["type"],
-                    name=record["name"],
-                    content=record["content"],
-                    ttl=record["ttl"],
-                    proxied=record["proxied"],
-                )
-                db.session.add(new_record)
-        db.session.commit()
-        return {"success": True, "data": records_data}
-    except requests.exceptions.RequestException as e:
+    response = requests.get(f"{BASE_URL}/zones/{zone_id}/dns_records", headers=headers)
+    response_data = response.json()
+    if response.status_code != 200 or not response_data.get("success", False):
         return {
             "success": False,
-            "error": f"Network error while fetching DNS records: {str(e)}",
+            "error": f"Failed to fetch DNS records: {response_data.get('errors', 'Unknown error')}",
         }
-    except Exception as e:
-        return {"success": False, "error": f"Unexpected error: {str(e)}"}
+    records_data = response_data.get("result", [])
+    domain = Domain.query.filter_by(zone_id=zone_id).first()
+    if not domain:
+        return {
+            "success": False,
+            "error": f"Domain với zone_id {zone_id} không tồn tại trong DB.",
+        }
+
+    # Xóa hết bản ghi DNS cũ cho domain này để luôn đồng bộ chuẩn
+    DNSRecord.query.filter_by(domain_id=domain.id).delete()
+    db.session.commit()
+
+    # Thêm bản ghi mới
+    for record in records_data:
+        new_record = DNSRecord(
+            domain_id=domain.id,
+            record_id=record.get("id"),
+            record_type=record.get("type"),
+            name=record.get("name"),
+            content=record.get("content"),
+            ttl=record.get("ttl"),
+            proxied=record.get("proxied"),
+        )
+        db.session.add(new_record)
+    db.session.commit()
+    return {"success": True, "data": records_data}
 
 
 def get_data_dns_records(zone_id):
@@ -214,4 +192,9 @@ def add_custom_domain_to_pages(project_name, custom_domain):
         print(f"Custom domain {custom_domain} added to project {project_name}.")
 
 
-# ==== END ====
+def delete_dns_record_cf(zone_id, record_id):
+    url = f"{BASE_URL}/zones/{zone_id}/dns_records/{record_id}"
+    response = requests.delete(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception("Failed to delete DNS record: " + str(response.text))
+    return response.json()

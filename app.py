@@ -68,12 +68,14 @@ def create_app():
     from routes.admin import admin_bp
     from routes.server import server_bp
     from routes.domain import domain_bp
+    from routes.dns import dns_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(server_bp)
     app.register_blueprint(domain_bp)
+    app.register_blueprint(dns_bp)
 
     # Kiểm soát truy cập: dùng Flask-Login, không cần kiểm tra "facebook_user_id" nữa
     @app.before_request

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+	<div class="mb-4">
+		<h4>
+			<i class="fa fa-plus-circle text-success me-2"></i>
+			Thêm DNS record cho <span class="text-primary">{{ domain.name }}</span>
+		</h4>
+	</div>
+	<form method="post" class="row g-4 shadow-sm p-4 rounded bg-light">
+		<div class="col-md-6">
+			<label class="form-label fw-bold">
+				<i class="fa fa-list me-1"></i>Loại bản ghi
+			</label>
+			<select name="record_type" class="form-select" required>
+				<option value="A">A (IPv4 Address)</option>
+				<option value="AAAA">AAAA (IPv6 Address)</option>
+				<option value="CNAME">CNAME (Alias)</option>
+				<option value="MX">MX (Mail Exchange)</option>
+				<option value="TXT">TXT (Text Record)</option>
+				<option value="SRV">SRV (Service Locator)</option>
+				<option value="NS">NS (Name Server)</option>
+				<option value="CAA">CAA (Certification Authority)</option>
+			</select>
+		</div>
+		<div class="col-md-6">
+			<label class="form-label fw-bold">
+				<i class="fa fa-terminal me-1"></i>Tên record (Name/Subdomain)
+			</label>
+			<input type="text" name="name" class="form-control" required placeholder="vd: www, api, mail...">
+		</div>
+		<div class="col-md-6">
+			<label class="form-label fw-bold">
+				<i class="fa fa-database me-1"></i>Nội dung (Content)
+			</label>
+			<input type="text" name="content" class="form-control" required
+				placeholder="vd: 1.2.3.4, cname.com, giá trị TXT...">
+		</div>
+		<div class="col-md-3">
+			<label class="form-label fw-bold">
+				<i class="fa fa-clock me-1"></i>TTL (giây)
+			</label>
+			<input type="number" name="ttl" class="form-control" value="3600" min="60" step="60">
+		</div>
+		<div class="col-md-3 d-flex align-items-end">
+			<div class="form-check ms-2">
+				<input type="checkbox" name="proxied" id="proxied" class="form-check-input">
+				<label for="proxied" class="form-check-label">
+					<i class="fa fa-cloud"></i> Sử dụng proxy Cloudflare
+				</label>
+			</div>
+		</div>
+		<div class="col-12 mt-3">
+			<button class="btn btn-success me-2">
+				<i class="fa fa-plus"></i> Thêm bản ghi
+			</button>
+			<a href="{{ url_for('dns.dns_records', domain_id=domain.id) }}" class="btn btn-secondary">
+				<i class="fa fa-arrow-left"></i> Hủy
+			</a>
+		</div>
+	</form>
+</div>
+{% endblock %}
