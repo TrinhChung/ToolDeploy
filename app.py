@@ -8,6 +8,7 @@ from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta
 from log import setup_logging
 from flask_login import LoginManager, current_user
+from seeder.seed_user import seed_admin_user
 
 from util.until import format_datetime
 from models.user import User
@@ -109,4 +110,5 @@ if __name__ == "__main__":
     app = create_app()
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+        seed_admin_user(app)
+    app.run(debug=False)
