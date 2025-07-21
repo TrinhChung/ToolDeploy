@@ -6,6 +6,7 @@ from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
+from bash_script.remote_deploy import run_remote_deploy
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 
@@ -13,12 +14,20 @@ deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app"
 @deployed_app_bp.route("/deploy", methods=["GET", "POST"])
 @login_required
 def deploy_app():
+    """
+    1. Hiển thị form chọn server / domain và khai báo ENV.
+    2. Khi submit:
+       • Tạo bản ghi DeployedApp (status=pending).
+       • SSH tới server được chọn bằng user/password,
+         chạy bash_script/deploy_installer.py.
+       • Cập nhật status = active / failed + lưu log.
+    """
     form = DeployAppForm()
     form.server_id.choices = [(s.id, s.name) for s in Server.query.all()]
     form.domain_id.choices = [(d.id, d.name) for d in Domain.query.all()]
 
+    # ── Gán ENV mặc định (khi ấn nút "default_env") ───────────────────────────
     if request.method == "POST" and "default_env" in request.form:
-        # Đề giá trị mặc định cho các trường ENV
         form.EMAIL.data = "chungtrinh2k2@gmail.com"
         form.ADDRESS.data = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam"
         form.PHONE_NUMBER.data = "07084773586"
@@ -26,10 +35,11 @@ def deploy_app():
         form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
         form.TAX_NUMBER.data = "0318728792"
 
+    # ── Submit triển khai ─────────────────────────────────────────────────────
     if form.validate_on_submit():
-        # Sinh APP_SECRET random
         app_secret = secrets.token_hex(16)
-        # Lấy tất cả env thành text
+
+        # Chuẩn bị ENV text (lưu DB, không gửi lên server – script sẽ tự sinh .env)
         env_text = (
             f"APP_ID={form.APP_ID.data}\n"
             f"APP_SECRET={app_secret}\n"
@@ -43,19 +53,52 @@ def deploy_app():
             f"TAX_NUMBER={form.TAX_NUMBER.data}"
         )
 
+        # 1) Lưu bản ghi với trạng thái pending
         deployed_app = DeployedApp(
             server_id=form.server_id.data,
             domain_id=form.domain_id.data,
             subdomain=form.subdomain.data.strip() or None,
             env=env_text,
             note=form.note.data,
-            status="active",
+            status="pending",
         )
         db.session.add(deployed_app)
         db.session.commit()
-        flash("Deploy app thành công! (Batch giả lập)", "success")
+
+        # 2) Lấy thông tin server để SSH
+        server = Server.query.get(form.server_id.data)
+
+        try:
+            # input_dir: nếu người dùng nhập subdomain thì dùng; ngược lại đặt tên cố định
+            input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
+
+            # Thực thi script trên remote host
+            log = run_remote_deploy(
+                host=server.ip,
+                user=server.admin_username,
+                password=server.admin_password,  # chỉ dùng password
+                input_dir=input_dir,
+                app_id=form.APP_ID.data,
+                app_secret=app_secret,
+                dns_web=form.DNS_WEB.data,
+                app_name=form.APP_NAME.data,
+            )
+
+            deployed_app.status = "active"
+            deployed_app.log = log
+            flash("🚀 Deploy thành công!", "success")
+
+        except Exception as e:
+            deployed_app.status = "failed"
+            deployed_app.log = str(e)
+            flash(f"❌ Deploy thất bại: {e}", "danger")
+
+        finally:
+            db.session.commit()
+
         return redirect(url_for("deployed_app.list_app"))
 
+    # GET hoặc form lỗi validate
     return render_template("deployed_app/deploy_app.html", form=form)
 
 
