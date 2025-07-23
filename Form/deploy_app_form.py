@@ -10,6 +10,7 @@ class DeployAppForm(FlaskForm):
 
     # ENV fields
     APP_ID = StringField("APP_ID", validators=[DataRequired()])
+    APP_SECRET = StringField("APP_SECRET", validators=[DataRequired()])
     APP_NAME = StringField("APP_NAME", validators=[DataRequired()])
     EMAIL = StringField("EMAIL", validators=[DataRequired()])
     ADDRESS = StringField("ADDRESS", validators=[DataRequired()])

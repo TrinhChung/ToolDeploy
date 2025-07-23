@@ -42,7 +42,7 @@ def deploy_app():
         # Chuẩn bị ENV text (lưu DB, không gửi lên server – script sẽ tự sinh .env)
         env_text = (
             f"APP_ID={form.APP_ID.data}\n"
-            f"APP_SECRET={app_secret}\n"
+            f"APP_SECRET={form.APP_SECRET.data}\n"
             f"SECRET_KEY={app_secret}\n"
             f"APP_NAME={form.APP_NAME.data}\n"
             f"EMAIL={form.EMAIL.data}\n"
@@ -76,12 +76,17 @@ def deploy_app():
             log = run_remote_deploy(
                 host=server.ip,
                 user=server.admin_username,
-                password=server.admin_password,  # chỉ dùng password
-                input_dir=input_dir,
-                app_id=form.APP_ID.data,
-                app_secret=app_secret,
-                dns_web=form.DNS_WEB.data,
-                app_name=form.APP_NAME.data,
+                password=server.admin_password
+                input_dir=input_dir
+                appId=form.APP_ID.data,
+                appSecret=form.APP_SECRET.data,
+                appName=form.APP_NAME.data,
+                email=form.EMAIL.data,
+                address=form.ADDRESS.data,
+                phoneNumber=form.PHONE_NUMBER.data,
+                dnsWeb=form.DNS_WEB.data,
+                companyName=form.COMPANY_NAME.data,
+                taxNumber=form.TAX_NUMBER.data
             )
 
             deployed_app.status = "active"

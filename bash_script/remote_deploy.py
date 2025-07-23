@@ -1,47 +1,70 @@
-# bash_script/remote_deploy.py
 import paramiko
 from typing import Optional
+import os
 
 
 def run_remote_deploy(
     host: str,
     user: str,
     *,
-    password: str,  # ✅ chỉ cần password
+    password: str,
     input_dir: str,
-    app_id: str,
-    app_secret: str,
-    dns_web: str,
-    app_name: str,
-    repo_url: str = "https://github.com/bach-long/getvideo-public.git",
-    email: str = "admin@example.com",
-    script_path: str = "./bash_script/deploy_installer.py",
+    appId: str,
+    appSecret: str,
+    appName: str,
+    email: str,
+    address: str,
+    phoneNumber: str,
+    dnsWeb: str,
+    companyName: str,
+    taxNumber: str,
+    password: str,
+    local_script_path: str = "./init.sh",
+    remote_path: str = "/home/init.sh",
 ) -> str:
-    """SSH tới server bằng user/password và chạy deploy_installer.py"""
+    """
+    Copy file init.sh lên server qua SSH và thực thi nó.
+    """
 
-    cmd = (
-        f"sudo python3 {script_path} "
-        f"{input_dir} {app_id} {app_secret} {dns_web} '{app_name}' "
-        f"--email {email} --repo {repo_url}"
-    )
+    remote_path = remote_path.format(user=user)
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    # 🔐 dùng password
-    client.connect(
+    # 🧠 Mở kết nối SSH
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(
         hostname=host,
         username=user,
         password=password,
         timeout=20,
         allow_agent=False,
-        look_for_keys=False,  # không thử key
+        look_for_keys=False,
     )
 
-    stdin, stdout, stderr = client.exec_command(cmd)
+    # 📤 Dùng SFTP để copy file lên
+    sftp = ssh.open_sftp()
+    try:
+        sftp.put(local_script_path, remote_path)
+    finally:
+        sftp.close()
+
+    # 🛠️ Cấp quyền thực thi và chạy file
+    cmd = f"chmod +x {remote_path} && bash {remote_path}"
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+
     exit_status = stdout.channel.recv_exit_status()
     out, err = stdout.read().decode(), stderr.read().decode()
-    client.close()
+    
+    ssh.close()
+
+    #File log nằm đâu?, quản lý thế nào
+    local_log_path=""
+
+    with open(local_log_path, "w", encoding="utf-8") as f:
+        f.write("=== STDOUT ===\n")
+        f.write(out)
+        f.write("\n\n=== STDERR ===\n")
+        f.write(err)
 
     if exit_status != 0:
-        raise RuntimeError(f"Remote deploy failed:\n{err}")
+        raise RuntimeError(f"Remote script execution failed:\n{err}")
     return out
