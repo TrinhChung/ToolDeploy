@@ -5,11 +5,6 @@ import re
 import random
 import string
 import os
-import nltk
-from nltk.corpus import stopwords
-
-# Tải stopwords lần đầu (chỉ cần chạy một lần)
-nltk.download("stopwords")
 
 # Tập hợp các từ nên bỏ qua
 custom_blacklist = {
@@ -24,22 +19,6 @@ custom_blacklist = {
     "group",
     "&",
 }
-
-# Kết hợp stopwords của NLTK và blacklist tùy chỉnh
-stop_words = set(stopwords.words("english")).union(custom_blacklist)
-
-
-def generate_acronym(text):
-    # Loại bỏ dấu câu và chuyển về chữ thường
-    clean_text = text.translate(str.maketrans("", "", string.punctuation)).lower()
-    words = clean_text.split()
-
-    # Loại bỏ các từ nằm trong stop_words
-    filtered = [word for word in words if word not in stop_words]
-
-    # Tạo chữ cái đầu từ các từ còn lại
-    acronym = "".join(word[0].upper() for word in filtered)
-    return acronym
 
 
 def extract_facebook_video_id(url):
@@ -174,34 +153,3 @@ def get_random_images(folder_path, folder_name, num_images=4):
     return [f"images/{folder_name}/{img}" for img in random.sample(images, num_images)]
 
 
-nltk.download("stopwords")
-
-# Tập hợp các từ nên bỏ qua
-custom_blacklist = {
-    "co",
-    "co.",
-    "company",
-    "ltd",
-    "ltd.",
-    "inc",
-    "inc.",
-    "llc",
-    "group",
-    "&",
-}
-
-# Kết hợp stopwords của NLTK và blacklist tùy chỉnh
-stop_words = set(stopwords.words("english")).union(custom_blacklist)
-
-
-def generate_acronym(text):
-    # Loại bỏ dấu câu và chuyển về chữ thường
-    clean_text = text.translate(str.maketrans("", "", string.punctuation)).lower()
-    words = clean_text.split()
-
-    # Loại bỏ các từ nằm trong stop_words
-    filtered = [word for word in words if word not in stop_words]
-
-    # Tạo chữ cái đầu từ các từ còn lại
-    acronym = "".join(word[0].upper() for word in filtered)
-    return acronym

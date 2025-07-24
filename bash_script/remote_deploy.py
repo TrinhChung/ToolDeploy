@@ -18,7 +18,6 @@ def run_remote_deploy(
     dnsWeb: str,
     companyName: str,
     taxNumber: str,
-    password: str,
     local_script_path: str = "./init.sh",
     remote_path: str = "/home/init.sh",
 ) -> str:

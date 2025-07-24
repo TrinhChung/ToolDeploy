@@ -76,8 +76,8 @@ def deploy_app():
             log = run_remote_deploy(
                 host=server.ip,
                 user=server.admin_username,
-                password=server.admin_password
-                input_dir=input_dir
+                password=server.admin_password,
+                input_dir=input_dir,
                 appId=form.APP_ID.data,
                 appSecret=form.APP_SECRET.data,
                 appName=form.APP_NAME.data,
