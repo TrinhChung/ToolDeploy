@@ -135,3 +135,5 @@ $env:FLASK_DEBUG = "1"
 * Đảm bảo thư mục migrations/ tồn tại sau khi chạy `flask db init`.
 * SECRET\_KEY phải giữ bí mật và không commit lên git/public repo.
 
+#python 3
+sudo apt install -y build-essential pkg-config libmysqlclient-dev
