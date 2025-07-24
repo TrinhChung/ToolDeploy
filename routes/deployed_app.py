@@ -29,6 +29,10 @@ def deploy_app():
     form.server_id.choices = [(s.id, s.name) for s in Server.query.all()]
     form.domain_id.choices = [(d.id, d.name) for d in Domain.query.all()]
 
+    subdomain = ''
+    dnsWeb = ''
+    domain_name = ''
+
     # ── Gán ENV mặc định (khi ấn nút "default_env") ───────────────────────────
     if request.method == "POST" and "default_env" in request.form:
         form.EMAIL.data = "chungtrinh2k2@gmail.com"
@@ -37,13 +41,13 @@ def deploy_app():
         form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
         form.TAX_NUMBER.data = "0318728792"
 
-    domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
-    subdomain=form.subdomain.data.strip() or None
-    dnsWeb=f"{subdomain}.{domain_name}"
-
     # ── Submit triển khai ─────────────────────────────────────────────────────
     if form.validate_on_submit():
         app_secret = secrets.token_hex(16)
+
+        domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
+        subdomain=form.subdomain.data.strip() or None
+        dnsWeb=f"{subdomain}.{domain_name}"
 
         # Chuẩn bị ENV text (lưu DB, không gửi lên server – script sẽ tự sinh .env)
         env_text = (
