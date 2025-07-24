@@ -2,7 +2,6 @@ import paramiko
 from typing import Optional
 import os
 
-
 def run_remote_deploy(
     host: str,
     user: str,

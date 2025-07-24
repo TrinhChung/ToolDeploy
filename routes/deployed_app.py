@@ -7,9 +7,11 @@ from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import run_remote_deploy
+import logging
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 
+logger = logging.getLogger("deploy_logger")
 
 @deployed_app_bp.route("/deploy", methods=["GET", "POST"])
 @login_required
@@ -89,6 +91,8 @@ def deploy_app():
                 taxNumber=form.TAX_NUMBER.data
             )
 
+            logger.info(f"Deploy thành công:\n{log}")
+
             deployed_app.status = "active"
             deployed_app.log = log
             flash("🚀 Deploy thành công!", "success")
@@ -97,6 +101,7 @@ def deploy_app():
             deployed_app.status = "failed"
             deployed_app.log = str(e)
             flash(f"❌ Deploy thất bại: {e}", "danger")
+            logger.error(f"Deploy lỗi:\n{str(e)}")
 
         finally:
             db.session.commit()
