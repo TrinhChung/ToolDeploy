@@ -8,6 +8,7 @@ from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import run_remote_deploy
 import logging
+import check_dns_record_exists, add_dns_record from util.cloud_flare
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 
@@ -70,8 +71,31 @@ def deploy_app():
         db.session.add(deployed_app)
         db.session.commit()
 
-        # 2) Lấy thông tin server để SSH
-        server = Server.query.get(form.server_id.data)
+        # 1.5) Thêm bản ghi A cho subdomain
+        domain = Domain.query.get(form.domain_id.data)
+        server = Server.query.get(form.server_id.data)  # Đảm bảo có IP
+
+        if subdomain:  # Chỉ tạo nếu có subdomain
+            try:
+                record_name = f"{subdomain}.{domain_name}"
+                # Kiểm tra nếu chưa có thì thêm
+                exists = check_dns_record_exists(zone_id=domain.zone_id, subdns=record_name)
+                if not exists:
+                    add_dns_record(
+                        zone_id=domain.zone_id,
+                        record_name=record_name,
+                        record_content=server.ip,
+                        record_type="A",
+                        ttl=3600,
+                        proxied=False  # Không dùng proxy
+                    )
+                    logger.info(f"✅ Đã tạo bản ghi A: {record_name} → {server.ip}")
+                else:
+                    logger.info(f"⚠️ Bản ghi A {record_name} đã tồn tại.")
+            except Exception as e:
+                logger.error(f"❌ Lỗi khi tạo bản ghi A: {str(e)}")
+                flash(f"Lỗi tạo bản ghi DNS: {e}", "danger")
+
 
         try:
             # input_dir: nếu người dùng nhập subdomain thì dùng; ngược lại đặt tên cố định
