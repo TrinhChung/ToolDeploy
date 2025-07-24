@@ -8,7 +8,7 @@ from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import run_remote_deploy
 import logging
-import check_dns_record_exists, add_dns_record from util.cloud_flare
+from util.cloud_flare import check_dns_record_exists, add_dns_record
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 
