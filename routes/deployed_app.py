@@ -1,5 +1,6 @@
 import secrets
 import threading
+import logging
 from flask import (
     Blueprint,
     render_template,
@@ -16,18 +17,21 @@ from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import run_remote_deploy
-import logging
 from util.cloud_flare import check_dns_record_exists, add_dns_record
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 logger = logging.getLogger("deploy_logger")
 
 
-def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dnsWeb):
-    # Đảm bảo mọi truy vấn Flask đều chạy trong app context!
+def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns_web):
+    """
+    Hàm chạy trong thread để deploy trên remote server.
+    Cần truyền `app` vào và dùng `with app.app_context():` để có context Flask.
+    """
     with app.app_context():
         deployed_app = DeployedApp.query.get(deployed_app_id)
         server = Server.query.get(server_id)
+
         try:
             log = run_remote_deploy(
                 host=server.ip,
@@ -40,7 +44,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                 email=form_data["EMAIL"],
                 address=form_data["ADDRESS"],
                 phoneNumber=form_data["PHONE_NUMBER"],
-                dnsWeb=dnsWeb,
+                dnsWeb=dns_web,
                 companyName=form_data["COMPANY_NAME"],
                 taxNumber=form_data["TAX_NUMBER"],
             )
@@ -62,14 +66,15 @@ def deploy_app():
     1. Hiển thị form chọn server / domain và khai báo ENV.
     2. Khi submit:
        • Tạo bản ghi DeployedApp (status=deploying).
-       • Chạy deploy ở background thread.
-       • Khi xong: Cập nhật status = active / failed + log.
+       • Tạo DNS record (Cloudflare) nếu có subdomain.
+       • Chạy deploy ở background thread (không block request).
+       • Khi xong: cập nhật status = active / failed + log.
     """
     form = DeployAppForm()
     form.server_id.choices = [(s.id, s.name) for s in Server.query.all()]
     form.domain_id.choices = [(d.id, d.name) for d in Domain.query.all()]
 
-    # Gán ENV mặc định nếu cần
+    # Gán ENV mặc định nếu bấm nút "default_env"
     if request.method == "POST" and "default_env" in request.form:
         form.EMAIL.data = "chungtrinh2k2@gmail.com"
         form.ADDRESS.data = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam"
@@ -77,13 +82,19 @@ def deploy_app():
         form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
         form.TAX_NUMBER.data = "0318728792"
 
+    # Submit form deploy
     if form.validate_on_submit():
-        app_secret = secrets.token_hex(16)
+        # An toàn: lấy domain_name từ choices
         domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
-        subdomain = form.subdomain.data.strip() or None
-        dnsWeb = f"{subdomain}.{domain_name}" if subdomain else domain_name
+        if not domain_name:
+            flash("Domain không hợp lệ.", "danger")
+            return redirect(url_for("deployed_app.deploy_app"))
 
-        # ENV lưu DB (không gửi lên server – script sẽ tự sinh .env)
+        app_secret = secrets.token_hex(16)
+        subdomain = form.subdomain.data.strip() or None
+        dns_web = f"{subdomain}.{domain_name}" if subdomain else domain_name
+
+        # ENV lưu trong DB (script remote sẽ tự sinh .env)
         env_text = (
             f"APP_ID={form.APP_ID.data}\n"
             f"APP_SECRET={form.APP_SECRET.data}\n"
@@ -92,12 +103,12 @@ def deploy_app():
             f"EMAIL={form.EMAIL.data}\n"
             f"ADDRESS={form.ADDRESS.data}\n"
             f"PHONE_NUMBER={form.PHONE_NUMBER.data}\n"
-            f"DNS_WEB={dnsWeb}\n"
+            f"DNS_WEB={dns_web}\n"
             f"COMPANY_NAME={form.COMPANY_NAME.data}\n"
             f"TAX_NUMBER={form.TAX_NUMBER.data}"
         )
 
-        # Tạo bản ghi "deploying"
+        # 1) Tạo bản ghi DB với trạng thái "deploying"
         deployed_app = DeployedApp(
             server_id=form.server_id.data,
             domain_id=form.domain_id.data,
@@ -109,7 +120,7 @@ def deploy_app():
         db.session.add(deployed_app)
         db.session.commit()
 
-        # Thêm bản ghi A cho subdomain (Cloudflare)
+        # 1.5) Tạo DNS record cho subdomain nếu có
         domain = Domain.query.get(form.domain_id.data)
         server = Server.query.get(form.server_id.data)
         if subdomain:
@@ -134,7 +145,7 @@ def deploy_app():
                 logger.error(f"❌ Lỗi khi tạo bản ghi A: {str(e)}")
                 flash(f"Lỗi tạo bản ghi DNS: {e}", "danger")
 
-        # Bắt đầu deploy ở background thread, truyền app context vào
+        # 2) Khởi động thread background deploy
         input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
         form_data = {
             "APP_ID": form.APP_ID.data,
@@ -154,7 +165,7 @@ def deploy_app():
                 server.id,
                 form_data,
                 input_dir,
-                dnsWeb,
+                dns_web,
             ),
             daemon=True,
         )
@@ -163,12 +174,16 @@ def deploy_app():
         flash("🚀 Đang deploy... Vui lòng kiểm tra lại sau!", "info")
         return redirect(url_for("deployed_app.list_app"))
 
+    # GET hoặc form lỗi
     return render_template("deployed_app/deploy_app.html", form=form)
 
 
 @deployed_app_bp.route("/list")
 @login_required
 def list_app():
+    """
+    Danh sách các app đã deploy (hoặc đang deploy), join với server/domain để hiển thị đầy đủ.
+    """
     deployed_apps = (
         db.session.query(DeployedApp, Server, Domain)
         .join(Server, DeployedApp.server_id == Server.id)
