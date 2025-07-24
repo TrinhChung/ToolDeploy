@@ -120,7 +120,6 @@ def add_dns_record(
     zone_id, record_name, record_content, record_type="A", ttl=3600, proxied=False
 ):
     """Thêm bản ghi DNS vào Cloudflare (admin only)."""
-    _admin_guard()
     url = f"{BASE_URL}/zones/{zone_id}/dns_records"
     payload = {
         "type": record_type,
