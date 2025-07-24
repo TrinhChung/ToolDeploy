@@ -75,6 +75,7 @@ def deploy_app():
             input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
 
             # Thực thi script trên remote host
+            domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
             log = run_remote_deploy(
                 host=server.ip,
                 user=server.admin_username,
@@ -86,7 +87,7 @@ def deploy_app():
                 email=form.EMAIL.data,
                 address=form.ADDRESS.data,
                 phoneNumber=form.PHONE_NUMBER.data,
-                dnsWeb=form.DNS_WEB.data,
+                dnsWeb=f"{deployed_app.subdomain}.{domain_name}",
                 companyName=form.COMPANY_NAME.data,
                 taxNumber=form.TAX_NUMBER.data
             )

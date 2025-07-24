@@ -105,7 +105,6 @@ yq --version || echo "yq ❌"
 docker --version || echo "Docker ❌"
 docker compose version || echo "Compose plugin ❌"
 python3 --version || echo "Python ❌"
-nc -h echo "Netcat ❌"
 
 # --- xử lý pull code ---
 echo

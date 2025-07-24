@@ -15,7 +15,6 @@ class DeployAppForm(FlaskForm):
     EMAIL = StringField("EMAIL", validators=[DataRequired()])
     ADDRESS = StringField("ADDRESS", validators=[DataRequired()])
     PHONE_NUMBER = StringField("PHONE_NUMBER", validators=[DataRequired()])
-    DNS_WEB = StringField("DNS_WEB", validators=[DataRequired()])
     COMPANY_NAME = StringField("COMPANY_NAME", validators=[DataRequired()])
     TAX_NUMBER = StringField("TAX_NUMBER", validators=[DataRequired()])
 
