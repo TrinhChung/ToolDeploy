@@ -8,7 +8,6 @@ ADDRESS="$7"
 PHONE_NUMBER="$8"
 COMPANY_NAME="$9"
 TAX_NUMBER="$10"
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
 TARGET_DIR="/home/$1"
 
 #!/bin/bash
@@ -48,6 +47,8 @@ if ! command -v python3 &> /dev/null; then
 else
   echo "✅ Python3 đã được cài."
 fi
+
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
 
 # --- Certbot ---
 if ! dpkg -s certbot python3-certbot-nginx &> /dev/null; then
