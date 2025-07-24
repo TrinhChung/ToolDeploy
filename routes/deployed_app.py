@@ -37,7 +37,8 @@ def deploy_app():
         form.TAX_NUMBER.data = "0318728792"
 
     domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
-    dnsWeb=f"{deployed_app.subdomain}.{domain_name}"
+    subdomain=form.subdomain.data.strip() or None
+    dnsWeb=f"{subdomain}.{domain_name}"
 
     # ── Submit triển khai ─────────────────────────────────────────────────────
     if form.validate_on_submit():
@@ -61,7 +62,7 @@ def deploy_app():
         deployed_app = DeployedApp(
             server_id=form.server_id.data,
             domain_id=form.domain_id.data,
-            subdomain=form.subdomain.data.strip() or None,
+            subdomain=subdomain,
             env=env_text,
             note=form.note.data,
             status="pending",
