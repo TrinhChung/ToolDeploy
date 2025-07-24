@@ -33,9 +33,11 @@ def deploy_app():
         form.EMAIL.data = "chungtrinh2k2@gmail.com"
         form.ADDRESS.data = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam"
         form.PHONE_NUMBER.data = "07084773586"
-        form.DNS_WEB.data = "noirsteed.bmapp.com"
         form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
         form.TAX_NUMBER.data = "0318728792"
+
+    domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
+    dnsWeb=f"{deployed_app.subdomain}.{domain_name}"
 
     # ── Submit triển khai ─────────────────────────────────────────────────────
     if form.validate_on_submit():
@@ -50,7 +52,7 @@ def deploy_app():
             f"EMAIL={form.EMAIL.data}\n"
             f"ADDRESS={form.ADDRESS.data}\n"
             f"PHONE_NUMBER={form.PHONE_NUMBER.data}\n"
-            f"DNS_WEB={form.DNS_WEB.data}\n"
+            f"DNS_WEB={dnsWeb}\n"
             f"COMPANY_NAME={form.COMPANY_NAME.data}\n"
             f"TAX_NUMBER={form.TAX_NUMBER.data}"
         )
@@ -75,7 +77,7 @@ def deploy_app():
             input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
 
             # Thực thi script trên remote host
-            domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
+            
             log = run_remote_deploy(
                 host=server.ip,
                 user=server.admin_username,
@@ -87,7 +89,7 @@ def deploy_app():
                 email=form.EMAIL.data,
                 address=form.ADDRESS.data,
                 phoneNumber=form.PHONE_NUMBER.data,
-                dnsWeb=f"{deployed_app.subdomain}.{domain_name}",
+                dnsWeb=dnsWeb,
                 companyName=form.COMPANY_NAME.data,
                 taxNumber=form.TAX_NUMBER.data
             )
