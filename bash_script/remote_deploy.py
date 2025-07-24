@@ -46,7 +46,7 @@ def run_remote_deploy(
         sftp.close()
 
     # 🛠️ Cấp quyền thực thi và chạy file
-    cmd = f"chmod +x {remote_path} && bash {remote_path}"
+    cmd = f'chmod +x {remote_path} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber}'
     stdin, stdout, stderr = ssh.exec_command(cmd)
 
     exit_status = stdout.channel.recv_exit_status()
@@ -55,13 +55,13 @@ def run_remote_deploy(
     ssh.close()
 
     #File log nằm đâu?, quản lý thế nào
-    local_log_path=""
+    # local_log_path=""
 
-    with open(local_log_path, "w", encoding="utf-8") as f:
-        f.write("=== STDOUT ===\n")
-        f.write(out)
-        f.write("\n\n=== STDERR ===\n")
-        f.write(err)
+    # with open(local_log_path, "w", encoding="utf-8") as f:
+    #     f.write("=== STDOUT ===\n")
+    #     f.write(out)
+    #     f.write("\n\n=== STDERR ===\n")
+    #     f.write(err)
 
     if exit_status != 0:
         raise RuntimeError(f"Remote script execution failed:\n{err}")

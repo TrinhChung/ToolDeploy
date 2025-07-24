@@ -3,6 +3,11 @@ APP_ID="$2"
 APP_SECRET="$3"
 DNS_WEB="$4"
 APP_NAME="$5"
+EMAIL="$6"
+ADDRESS="$7"
+PHONE_NUMBER="$8"
+COMPANY_NAME="$9"
+TAX_NUMBER="$10"
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
 TARGET_DIR="/home/$1"
 
