@@ -18,11 +18,6 @@ from models.dns_record import DNSRecord
 from models.server import Server
 from models.deployed_app import DeployedApp
 from models.cloudflare_acc import CloudflareAccount
-os.environ["TZ"] = "Asia/Ho_Chi_Minh"
-import time
-
-if hasattr(time, "tzset"):
-    time.tzset()
 
 load_dotenv()
 migrate = Migrate()
