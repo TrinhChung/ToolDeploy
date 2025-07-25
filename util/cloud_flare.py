@@ -219,3 +219,59 @@ def add_or_update_txt_record(zone_id, subdns, dns, old_txt, new_txt, ttl=2147483
             error_message = update_response.json().get("errors", "Unknown error")
             raise Exception(f"Failed to update TXT record: {error_message}")
 
+
+def update_dns_record(
+    zone_id,
+    record_id,
+    record_name,
+    record_content,
+    record_type="A",
+    ttl=3600,
+    proxied=False,
+    cf_account=None,
+):
+    """
+    Cập nhật 1 DNS record đã tồn tại trên Cloudflare.
+    - record_id: ID của bản ghi DNS cần update (lấy qua API hoặc đã lưu trong DB)
+    - Các tham số còn lại tương tự add_dns_record
+    """
+    _admin_guard()
+    BASE_URL = "https://api.cloudflare.com/client/v4"
+    headers = build_cf_headers(cf_account)
+    url = f"{BASE_URL}/zones/{zone_id}/dns_records/{record_id}"
+    payload = {
+        "type": record_type,
+        "name": record_name,
+        "content": record_content,
+        "ttl": ttl,
+        "proxied": proxied,
+    }
+    resp = requests.put(url, json=payload, headers=headers)
+    if resp.status_code in [200, 201]:
+        return resp.json()
+    else:
+        error_message = resp.json().get("errors", "Unknown error")
+        raise Exception(f"Failed to update DNS record: {error_message}")
+
+
+def get_record_id_by_name(zone_id, record_name, record_type="A", cf_account=None):
+    """
+    Lấy record_id của bản ghi DNS theo tên và type.
+    """
+    BASE_URL = "https://api.cloudflare.com/client/v4"
+    headers = build_cf_headers(cf_account)
+    params = {
+        "type": record_type,
+        "name": record_name,
+    }
+    resp = requests.get(
+        f"{BASE_URL}/zones/{zone_id}/dns_records", headers=headers, params=params
+    )
+    if resp.status_code == 200:
+        records = resp.json().get("result", [])
+        if records:
+            return records[0]["id"]
+        else:
+            return None
+    else:
+        raise Exception(f"Failed to fetch DNS records: {resp.text}")

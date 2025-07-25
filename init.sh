@@ -3,7 +3,11 @@ APP_ID="$2"
 APP_SECRET="$3"
 DNS_WEB="$4"
 APP_NAME="$5"
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
+EMAIL="$6"
+ADDRESS="$7"
+PHONE_NUMBER="$8"
+COMPANY_NAME="$9"
+TAX_NUMBER="$10"
 TARGET_DIR="/home/$1"
 
 #!/bin/bash
@@ -21,7 +25,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnup
 if ! dpkg -s git &> /dev/null; then
   echo "🧰 Cài đặt Git..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
-else
+elseC
   echo "✅ Git đã được cài."
 fi
 
@@ -43,6 +47,23 @@ if ! command -v python3 &> /dev/null; then
 else
   echo "✅ Python3 đã được cài."
 fi
+
+# --- Pip ---
+if ! command -V python3-pip &> /dev/null; then
+  echo "🐍 Cài đặt PIP..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
+else
+  echo "✅ PIP đã được cài."
+fi
+
+if ! command -V python3-venv &> /dev/null; then
+  echo "🐍 Cài đặt PIP..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-venv
+else
+  echo "✅ PIP đã được cài."
+fi
+
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
 
 # --- Certbot ---
 if ! dpkg -s certbot python3-certbot-nginx &> /dev/null; then
@@ -99,7 +120,6 @@ yq --version || echo "yq ❌"
 docker --version || echo "Docker ❌"
 docker compose version || echo "Compose plugin ❌"
 python3 --version || echo "Python ❌"
-nc -h echo "Netcat ❌"
 
 # --- xử lý pull code ---
 echo
@@ -147,7 +167,7 @@ APP_NAME=$APP_NAME
 PASSWORD_DB=password123456
 NAME_DB=video
 USER_DB=admin
-ADDRESS_DB=mysql_db
+ADDRESS_DB=127.0.0.1
 EMAIL=chungtrinh2k2@gmail.com
 ADDRESS=147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam
 PHONE_NUMBER=07084773586
@@ -274,6 +294,23 @@ else
   done
 
   echo "🚀 Khởi động ứng dụng..."
-  cd "$TARGET_DIR"
-  docker compose up --build
+  if [ -d "/home/myenv" ]; then
+    echo "Folder tồn tại"
+  else
+    python3 -m venv /home/myenv
+  fi
+  echo "Tạo folder virtual env thành công"
+  source /home/myenv/bin/activate
+  if [ $? -eq 0 ]; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y pkg-config default-libmysqlclient-dev build-essential
+    export TZ=Asia/Ho_Chi_Minh
+    echo "Lệnh chạy thành công"
+    cd "$TARGET_DIR"
+    #pip install --upgrade pip
+    pip install -r requirements.txt
+    flask db upgrade &&
+    nohup flask run --host=0.0.0.0 --port=$NEW_PORT &
+  else
+      echo "Lệnh thất bại"
+  fi
 fi
