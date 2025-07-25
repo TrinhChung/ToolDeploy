@@ -15,6 +15,7 @@
 				<tr>
 					<th style="width:40px;">#</th>
 					<th>Domain</th>
+					<th style="min-width:130px;">Cloudflare Account</th>
 					<th style="min-width:90px;">Status</th>
 					<th style="max-width:220px;">Zone ID</th>
 					<th class="text-center" style="width:200px;">Chức năng</th>
@@ -25,6 +26,17 @@
 				<tr>
 					<td class="text-muted small">{{ loop.index }}</td>
 					<td class="fw-semibold">{{ d.name }}</td>
+					<td>
+						{% if d.cloudflare_account %}
+						<a href="{{ url_for('cloudflare.list_accounts') }}#cf-acc-{{ d.cloudflare_account.id }}"
+							title="{{ d.cloudflare_account.email }}">
+							{{ d.cloudflare_account.name }}
+						</a>
+						{% else %}
+						<span class="text-muted">-</span>
+						{% endif %}
+					</td>
+
 					<td>
 						{% if d.status == 'active' %}
 						<span class="badge bg-success bg-opacity-75 px-3 py-2 rounded-pill">Active</span>
@@ -47,13 +59,15 @@
 								<i class="fa fa-eye"></i> <span class="d-none d-lg-inline ms-1">DNS</span>
 							</a>
 							{% if d.status != 'active' %}
-							<a href="{{ url_for('domain.verify_domain', domain_id=d.id) }}" class="btn btn-sm btn-outline-info">
+							<a href="{{ url_for('domain.verify_domain', domain_id=d.id) }}"
+								class="btn btn-sm btn-outline-info">
 								<i class="fa fa-check"></i> <span class="d-none d-lg-inline">Xác thực</span>
 							</a>
 							{% endif %}
 							{% if is_admin %}
-							<form method="POST" action="{{ url_for('domain.delete_domain', domain_id=d.id) }}" style="display:inline;"
-								class="d-inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa domain này?');">
+							<form method="POST" action="{{ url_for('domain.delete_domain', domain_id=d.id) }}"
+								style="display:inline;" class="d-inline"
+								onsubmit="return confirm('Bạn chắc chắn muốn xóa domain này?');">
 								{{ form.csrf_token }}
 								<button type="submit" class="btn btn-sm btn-outline-danger">
 									<i class="fa fa-trash"></i>
