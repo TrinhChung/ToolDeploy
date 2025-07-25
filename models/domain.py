@@ -13,6 +13,8 @@ class Domain(db.Model):
     user = db.relationship("User", back_populates="domains")
     dns_records = db.relationship("DNSRecord", back_populates="domain", lazy=True)
     deployed_apps = db.relationship("DeployedApp", back_populates="domain", lazy=True)
+    cloudflare_account_id = db.Column(db.Integer, db.ForeignKey("cloudflare_account.id"), nullable=True)
+    cloudflare_account = db.relationship("CloudflareAccount", back_populates="domains")
 
     def __repr__(self):
         return f"<Domain {self.name}>"

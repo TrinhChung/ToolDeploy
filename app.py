@@ -9,6 +9,7 @@ from datetime import timedelta
 from log import setup_logging
 from flask_login import LoginManager, current_user
 from seeder.seed_user import seed_admin_user
+from seeder.seed_cloudflare_account import seed_cloudflare_account
 
 from util.until import format_datetime
 from models.user import User
@@ -16,6 +17,7 @@ from models.domain import Domain
 from models.dns_record import DNSRecord
 from models.server import Server
 from models.deployed_app import DeployedApp
+from models.cloudflare_acc import CloudflareAccount
 
 load_dotenv()
 migrate = Migrate()
@@ -71,6 +73,7 @@ def create_app():
     from routes.domain import domain_bp
     from routes.dns import dns_bp
     from routes.deployed_app import deployed_app_bp
+    from routes.cloudflare_account import cloudflare_bp
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
@@ -79,6 +82,7 @@ def create_app():
     app.register_blueprint(domain_bp)
     app.register_blueprint(dns_bp)
     app.register_blueprint(deployed_app_bp)
+    app.register_blueprint(cloudflare_bp)
 
     # Kiểm soát truy cập: dùng Flask-Login, không cần kiểm tra "facebook_user_id" nữa
     @app.before_request
@@ -111,4 +115,5 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         seed_admin_user(app)
+        seed_cloudflare_account(app)
     app.run(host="0.0.0.0", port=4000, debug=True)

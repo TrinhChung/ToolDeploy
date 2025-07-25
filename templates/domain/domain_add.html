@@ -8,6 +8,11 @@
 			{{ form.name.label(class="form-label") }}
 			{{ form.name(class="form-control") }}
 		</div>
+		<div class="mb-3">
+			{{ form.cloudflare_account_id.label(class="form-label") }}
+			{{ form.cloudflare_account_id(class="form-select") }}
+		</div>
+
 		<button class="btn btn-success">{{ form.submit.label.text }}</button>
 		<a href="{{ url_for('domain.list_domain') }}" class="btn btn-outline-secondary">Huỷ</a>
 	</form>

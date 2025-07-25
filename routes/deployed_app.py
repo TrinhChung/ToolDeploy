@@ -123,11 +123,14 @@ def deploy_app():
         # 1.5) Tạo DNS record cho subdomain nếu có
         domain = Domain.query.get(form.domain_id.data)
         server = Server.query.get(form.server_id.data)
+        cf_account = domain.cloudflare_account   # <--- Lấy account gắn với domain
         if subdomain:
             try:
                 record_name = f"{subdomain}.{domain_name}"
                 exists = check_dns_record_exists(
-                    zone_id=domain.zone_id, subdns=record_name
+                    zone_id=domain.zone_id,
+                    subdns=record_name,
+                    cf_account=cf_account   # <--- THÊM tham số này
                 )
                 if not exists:
                     add_dns_record(
@@ -137,13 +140,17 @@ def deploy_app():
                         record_type="A",
                         ttl=3600,
                         proxied=False,
+                        cf_account=cf_account   # <--- THÊM tham số này
                     )
                     logger.info(f"✅ Đã tạo bản ghi A: {record_name} → {server.ip}")
                 else:
-                    logger.info(f"⚠️ Bản ghi A {record_name} đã tồn tại.")
+                    logger.warning(f"⚠️ Bản ghi A {record_name} đã tồn tại.")
+                    flash(f"⚠️ Bản ghi A {record_name} đã tồn tại.", "danger")
+                    return redirect(url_for("deployed_app.deploy_app"))
             except Exception as e:
                 logger.error(f"❌ Lỗi khi tạo bản ghi A: {str(e)}")
                 flash(f"Lỗi tạo bản ghi DNS: {e}", "danger")
+                return redirect(url_for("deployed_app.deploy_app"))
 
         # 2) Khởi động thread background deploy
         input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
