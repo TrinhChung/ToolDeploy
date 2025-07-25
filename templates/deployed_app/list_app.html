@@ -18,11 +18,11 @@
 				<tr>
 					<th style="width:40px;">#</th>
 					<th>Server</th>
-					<th>Domain</th>
-					<th>Subdomain</th>
+					<th>Domain đã deploy</th>
+					{% if current_user.is_authenticated and current_user.is_admin %}
 					<th>ENV</th>
+					{% endif %}
 					<th>Status</th>
-					<th>Ghi chú</th>
 					<th>Ngày tạo</th>
 				</tr>
 			</thead>
@@ -31,19 +31,30 @@
 				<tr>
 					<td class="text-muted small">{{ loop.index }}</td>
 					<td>{{ server.name }}</td>
-					<td>{{ domain.name }}</td>
 					<td>
-						{% if app.subdomain %}
-						<span class="badge bg-info">{{ app.subdomain }}</span>
+						{% set full_domain = app.subdomain ~ '.' ~ domain.name if app.subdomain else domain.name %}
+						{% set app_url = "https://" ~ full_domain %}
+						<a href="{{ app_url }}" class="deploy-link" target="_blank" rel="noopener noreferrer"
+						   title="Mở {{ full_domain }} trên tab mới">
+							<span class="text-truncate" style="font-family:monospace; max-width:210px; display:inline-block; vertical-align:middle;">
+								{{ full_domain }}
+							</span>
+							<i class="fa fa-external-link-alt ms-1" style="font-size:0.93em;color:#007bff;vertical-align:middle;"></i>
+						</a>
+					</td>
+					{% if current_user.is_authenticated and current_user.is_admin %}
+					<td>
+						{% if app.env %}
+						<button class="btn btn-link btn-copy-env p-0" title="Copy ENV"
+						        data-env="{{ app.env|e }}">
+							<i class="fa fa-copy icon-copy"></i>
+							<i class="fa fa-check icon-check d-none"></i>
+						</button>
 						{% else %}
 						<span class="text-secondary">-</span>
 						{% endif %}
 					</td>
-					<td>
-						<span style="max-width:200px;white-space:pre-line;display:inline-block;word-break:break-all;">
-							{{ app.env|default('-', true) }}
-						</span>
-					</td>
+					{% endif %}
 					<td>
 						{% if app.status == 'active' %}
 						<span class="badge bg-success">Active</span>
@@ -53,13 +64,12 @@
 						<span class="badge bg-secondary">{{ app.status }}</span>
 						{% endif %}
 					</td>
-					<td>{{ app.note or '-' }}</td>
 					<td>{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
 				</tr>
 				{% endfor %}
 				{% if deployed_apps|length == 0 %}
 				<tr>
-					<td colspan="8" class="text-center text-muted py-4">
+					<td colspan="{{ 6 if (current_user.is_authenticated and current_user.is_admin) else 5 }}" class="text-center text-muted py-4">
 						<i class="fa fa-exclamation-circle me-1"></i>
 						Chưa có app nào được deploy.
 					</td>
@@ -69,4 +79,123 @@
 		</table>
 	</div>
 </div>
+<style>
+	.table-responsive {
+		background: #fff;
+		border-radius: 12px;
+		padding: 0.7rem;
+	}
+	.table td, .table th {
+		vertical-align: middle !important;
+		line-height: 1.3 !important;
+	}
+	.text-truncate {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 210px;
+		display: inline-block;
+	}
+	.deploy-link {
+		color: #007bff;
+		text-decoration: none;
+		transition: color 0.12s;
+	}
+	.deploy-link:hover {
+		color: #0056b3;
+		text-decoration: underline;
+	}
+	.deploy-link .fa-external-link-alt {
+		margin-left: 2px;
+	}
+	.btn-copy-env {
+		color: #444;
+		background: none;
+		border: none;
+		cursor: pointer;
+		transition: color 0.12s;
+		font-size: 1em;
+		position: relative;
+	}
+	.btn-copy-env .icon-check {
+		color: #28a745;
+		font-size: 1.08em;
+		vertical-align: middle;
+	}
+	.btn-copy-env .icon-copy {
+		vertical-align: middle;
+	}
+	.btn-copy-env.copied .icon-copy {
+		display: none;
+	}
+	.btn-copy-env.copied .icon-check {
+		display: inline;
+		animation: fadeInOut 1.2s;
+	}
+	.btn-copy-env .icon-check.d-none {
+		display: none;
+	}
+	@keyframes fadeInOut {
+		0% { opacity: 0;}
+		10% { opacity: 1;}
+		80% { opacity: 1;}
+		100% { opacity: 0;}
+	}
+	.btn-copy-env:hover {
+		color: #007bff;
+	}
+	@media (max-width: 576px) {
+		.table th,
+		.table td {
+			font-size: 0.98em;
+		}
+	}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+	const buttons = document.querySelectorAll(".btn-copy-env");
+	buttons.forEach(btn => {
+		btn.addEventListener("click", function(e) {
+			const env = btn.getAttribute("data-env");
+			const iconCopy = btn.querySelector('.icon-copy');
+			const iconCheck = btn.querySelector('.icon-check');
+			// Copy to clipboard
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(env).then(function() {
+					btn.title = "Đã copy ENV!";
+					btn.classList.add("copied");
+					iconCopy.classList.add("d-none");
+					iconCheck.classList.remove("d-none");
+					setTimeout(function() {
+						btn.title = "Copy ENV";
+						btn.classList.remove("copied");
+						iconCopy.classList.remove("d-none");
+						iconCheck.classList.add("d-none");
+					}, 1200);
+				});
+			} else {
+				// Fallback cho trình duyệt cũ
+				const textarea = document.createElement("textarea");
+				textarea.value = env;
+				document.body.appendChild(textarea);
+				textarea.select();
+				try { document.execCommand("copy"); } catch(e) {}
+				document.body.removeChild(textarea);
+				btn.title = "Đã copy ENV!";
+				btn.classList.add("copied");
+				iconCopy.classList.add("d-none");
+				iconCheck.classList.remove("d-none");
+				setTimeout(function() {
+					btn.title = "Copy ENV";
+					btn.classList.remove("copied");
+					iconCopy.classList.remove("d-none");
+					iconCheck.classList.add("d-none");
+				}, 1200);
+			}
+			e.preventDefault();
+			e.stopPropagation();
+		});
+	});
+});
+</script>
 {% endblock %}
