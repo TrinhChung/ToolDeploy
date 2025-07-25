@@ -235,7 +235,6 @@ def update_dns_record(
     - record_id: ID của bản ghi DNS cần update (lấy qua API hoặc đã lưu trong DB)
     - Các tham số còn lại tương tự add_dns_record
     """
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
     url = f"{BASE_URL}/zones/{zone_id}/dns_records/{record_id}"
