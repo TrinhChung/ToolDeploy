@@ -25,7 +25,7 @@ def _admin_guard():
 
 # ========== DOMAIN ==========
 def sync_domains_from_cf():
-    """Đồng bộ domain từ Cloudflare về database (chỉ admin)."""
+    """Đồng bộ domain từ Cloudflare về database (chỉ admin), đồng bộ luôn DNS records từng domain."""
     _admin_guard()
     response = requests.get(f"{BASE_URL}/zones", headers=headers)
     if response.status_code == 200:
@@ -39,13 +39,20 @@ def sync_domains_from_cf():
                     status=domain.get("status", "pending"),
                 )
                 db.session.add(new_domain)
+                db.session.commit()  # Commit xong mới có domain.id
+                # Đồng bộ luôn DNS record cho domain mới
+                get_dns_records(domain["id"])
             else:
+                # Update info zone_id, status (nếu có thay đổi)
                 existing_domain.zone_id = domain["id"]
                 existing_domain.status = domain.get("status", "pending")
-        db.session.commit()
+                db.session.commit()
+                # Đồng bộ luôn DNS record cho domain đã có
+                get_dns_records(domain["id"])
         return domains_data
     else:
         raise Exception("Failed to fetch domains:", response.text)
+
 
 
 def create_cloudflare_zone(domain_name):
