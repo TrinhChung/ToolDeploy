@@ -21,7 +21,8 @@ from models.cloudflare_acc import CloudflareAccount
 os.environ["TZ"] = "Asia/Ho_Chi_Minh"
 import time
 
-time.tzset()
+if hasattr(time, "tzset"):
+    time.tzset()
 
 load_dotenv()
 migrate = Migrate()
