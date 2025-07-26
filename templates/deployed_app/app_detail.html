@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Chi tiết App đã Deploy{% endblock %}
+{% block content %}
+<div class="container py-4">
+	<div class="d-flex align-items-center mb-4 gap-3 flex-wrap">
+		<h2 class="fw-bold mb-0 text-primary">
+			<i class="fa fa-info-circle me-2"></i>Chi tiết App đã Deploy
+		</h2>
+		<span class="badge fs-6
+			{% if app.status == 'active' %} bg-success
+			{% elif app.status == 'pending' %} bg-warning text-dark
+			{% elif app.status == 'add_txt' %} bg-info text-dark
+			{% elif app.status == 'failed' %} bg-danger
+			{% else %} bg-secondary
+			{% endif %}" style="vertical-align:middle;">
+			{% if app.status == 'active' %}Đang chạy
+			{% elif app.status == 'pending' %}Đang chờ
+			{% elif app.status == 'add_txt' %}Đã xác minh
+			{% elif app.status == 'failed' %}Lỗi deploy
+			{% else %}{{ app.status }}{% endif %}
+		</span>
+	</div>
+
+	<div class="card shadow-sm border-0 mb-4">
+		<div class="card-body px-4 py-3">
+			<div class="row g-3 mb-3">
+				<div class="col-md-6">
+					<div class="mb-2"><strong>ID:</strong> <span class="text-secondary">{{ app.id }}</span></div>
+					<div class="mb-2"><strong>Tên server:</strong> <span class="text-secondary">{{ server.name }}</span></div>
+					<div class="mb-2"><strong>Tên miền:</strong> <span class="text-secondary">{{ domain.name }}</span></div>
+					<div class="mb-2"><strong>Subdomain:</strong> <span class="text-secondary">{{ app.subdomain or '-' }}</span>
+					</div>
+					<div class="mb-2"><strong>Ghi chú:</strong> <span class="text-secondary">{{ app.note or '-' }}</span></div>
+					<div class="mb-2"><strong>Ngày tạo:</strong> <span
+							class="text-secondary">{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+				</div>
+				<div class="col-md-6">
+					<div class="mb-2"><strong>ENV:</strong>
+						<pre class="bg-light p-2 rounded border" style="font-size:0.97em; min-height:64px;">{{ app.env or '-' }}
+						</pre>
+					</div>
+					<div class="mb-2"><strong>Log:</strong>
+						<pre class="bg-light p-2 rounded border" style="font-size:0.97em; min-height:64px;">{{ app.log or '-' }}
+						</pre>
+					</div>
+					{% if verification %}
+					<div class="mb-2">
+						<strong>TXT xác minh hiện tại:</strong>
+						<code class="d-block mt-1 mb-1" style="font-size:1em">{{ verification.txt_value }}</code>
+						<span class="small text-muted">Số lần tạo/cập nhật: {{ verification.create_count }}</span>
+					</div>
+					{% endif %}
+					<form action="{{ url_for('deployed_app.add_dns_txt', app_id=app.id) }}" method="post" class="mt-2 mb-2">
+						<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+						<div class="input-group">
+							<input type="text" class="form-control" name="txt_value" placeholder="Nhập TXT xác minh mới..."
+								value="{{ verification.txt_value if verification else '' }}" required>
+							<button type="submit" class="btn btn-outline-primary">
+								<i class="fa fa-sync-alt me-1"></i>Cập nhật TXT
+							</button>
+						</div>
+						<small class="form-text text-muted">Bạn có thể cập nhật giá trị TXT mới cho app này bất cứ lúc nào.</small>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+	<a href="{{ url_for('deployed_app.list_app') }}" class="btn btn-outline-secondary">
+		<i class="fa fa-arrow-left me-1"></i>Quay lại danh sách
+	</a>
+</div>
+
+<style>
+	.card-body strong {
+		min-width: 110px;
+		display: inline-block;
+	}
+
+	pre {
+		margin-bottom: 0;
+		overflow-x: auto;
+		word-break: break-all;
+	}
+
+	code {
+		background: #eef6fa;
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+
+	@media (max-width: 768px) {
+		.card-body .row>div {
+			margin-bottom: 1rem;
+		}
+	}
+</style>
+{% endblock %}

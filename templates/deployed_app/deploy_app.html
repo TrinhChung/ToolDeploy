@@ -71,7 +71,7 @@
 			<button type="submit" class="btn btn-success px-4">
 				<i class="fa fa-paper-plane me-2"></i>Deploy App
 			</button>
-			<button name="default_env" value="1" class="btn btn-outline-secondary" type="submit">
+			<button id="btnDefaultEnv" type="button" class="btn btn-outline-secondary">
 				<i class="fa fa-magic me-1"></i>Đề giá trị mặc định
 			</button>
 		</div>
@@ -93,7 +93,17 @@
 			err.textContent = "";
 		}
 	});
+
+	document.getElementById('btnDefaultEnv').addEventListener('click', function () {
+		// Gán giá trị mặc định vào các trường
+		document.querySelector('input[name="EMAIL"]').value = "chungtrinh2k2@gmail.com";
+		document.querySelector('input[name="ADDRESS"]').value = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam";
+		document.querySelector('input[name="PHONE_NUMBER"]').value = "07084773586";
+		document.querySelector('input[name="COMPANY_NAME"]').value = "CÔNG TY TNHH NOIR STEED";
+		document.querySelector('input[name="TAX_NUMBER"]').value = "0318728792";
+	});
 </script>
+
 <style>
 	.card-body {
 		background: #f8fafc;

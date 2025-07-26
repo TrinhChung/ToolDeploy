@@ -186,8 +186,16 @@ def check_dns_record_exists(zone_id, subdns, cf_account):
     else:
         raise Exception("Failed to fetch DNS records:", resp.text)
 
-def add_or_update_txt_record(zone_id, subdns, dns, old_txt, new_txt, ttl=2147483647, cf_account=None):
-    """Thêm hoặc cập nhật bản ghi TXT trên Cloudflare (multi-account)."""
+
+def add_or_update_txt_record(
+    zone_id, subdns, dns, new_txt, ttl=3600, cf_account=None
+):
+    """
+    Thêm hoặc cập nhật bản ghi TXT trên Cloudflare (multi-account).
+    - Nếu chưa có bản ghi TXT thì thêm mới.
+    - Nếu đã có nhưng khác nội dung thì cập nhật.
+    - Nếu đã đúng nội dung thì không làm gì.
+    """
     _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
@@ -197,13 +205,26 @@ def add_or_update_txt_record(zone_id, subdns, dns, old_txt, new_txt, ttl=2147483
     if resp.status_code != 200:
         raise Exception("Failed to fetch DNS records:", resp.text)
     records = resp.json().get("result", [])
-    if not records or not old_txt:
+
+    if not records:
+        # Không tồn tại, thêm mới
         return add_dns_record(
-            zone_id, record_name, new_txt, record_type="TXT", ttl=ttl, proxied=False, cf_account=cf_account
+            zone_id,
+            record_name,
+            new_txt,
+            record_type="TXT",
+            ttl=ttl,
+            proxied=False,
+            cf_account=cf_account,
         )
     else:
+        # Đã có record, kiểm tra content
         record = records[0]
         record_id = record["id"]
+        current_content = record["content"]
+        if current_content == new_txt:
+            return {"success": True, "message": "TXT record đã tồn tại đúng nội dung."}
+        # Cần update
         update_url = f"{BASE_URL}/zones/{zone_id}/dns_records/{record_id}"
         payload = {
             "type": "TXT",

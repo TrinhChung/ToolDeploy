@@ -22,7 +22,9 @@ from util.cloud_flare import (
     add_dns_record,
     get_record_id_by_name,
     update_dns_record,
+    add_or_update_txt_record,
 )
+from models.domain_verification import DomainVerification
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 logger = logging.getLogger("deploy_logger")
@@ -56,6 +58,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             # Chỉ chạy nếu có subdomain (tức là deploy subdomain)
             if deployed_app.subdomain:
                 domain = Domain.query.get(deployed_app.domain_id)
+                print(f"Domain: {domain.name}, Zone ID: {domain.zone_id}")
                 cf_account = domain.cloudflare_account
                 zone_id = domain.zone_id
                 record_name = f"{deployed_app.subdomain}.{domain.name}"
@@ -187,9 +190,6 @@ def deploy_app():
     form.server_id.choices = [(s.id, s.name) for s in Server.query.all()]
     form.domain_id.choices = [(d.id, d.name) for d in Domain.query.all()]
 
-    if request.method == "POST" and "default_env" in request.form:
-        fill_default_env(form)
-
     if form.validate_on_submit():
         domain_name = dict(form.domain_id.choices).get(form.domain_id.data)
         if not domain_name:
@@ -227,3 +227,92 @@ def list_app():
         .all()
     )
     return render_template("deployed_app/list_app.html", deployed_apps=deployed_apps)
+
+@deployed_app_bp.route("/add-dns-txt/<int:app_id>", methods=["POST"])
+@login_required
+def add_dns_txt(app_id):
+    txt_value = (request.form.get("txt_value") or "").strip()
+    if not txt_value:
+        flash("Vui lòng nhập nội dung TXT xác minh!", "warning")
+        return redirect(url_for("deployed_app.list_app"))
+    try:
+        # Lấy thông tin app, domain, Cloudflare account
+        app = DeployedApp.query.get_or_404(app_id)
+        domain = Domain.query.get_or_404(app.domain_id)
+        cf_account = domain.cloudflare_account
+        subdomain = app.subdomain or ""
+        # Gọi hàm xử lý thêm/cập nhật TXT (Cloudflare)
+        result = add_or_update_txt_record(
+            zone_id=domain.zone_id,
+            subdns=subdomain,
+            dns=domain.name,
+            new_txt=txt_value,
+            ttl=3600,
+            cf_account=cf_account,
+        )
+
+        # ==== Cập nhật vào bảng DomainVerification ====
+        verification = DomainVerification.query.filter_by(
+            deployed_app_id=app.id
+        ).first()
+        if verification:
+            verification.txt_value = txt_value
+            verification.create_count += 1
+        else:
+            verification = DomainVerification(
+                deployed_app_id=app.id,
+                txt_value=txt_value,
+                create_count=1,
+            )
+            db.session.add(verification)
+        # ==============================================
+
+        # Update trạng thái app
+        app.status = "add_txt"
+        db.session.commit()
+        flash("Đã thêm/cập nhật bản ghi TXT thành công!", "success")
+    except Exception as e:
+        flash(f"Lỗi khi thêm/cập nhật bản ghi TXT: {e}", "danger")
+    return redirect(url_for("deployed_app.list_app"))
+
+
+@deployed_app_bp.route("/stop-app/<int:app_id>", methods=["POST"])
+@login_required
+def stop_app(app_id):
+    print(f"[ACTION] Dừng app ID: {app_id}")
+    # TODO: xử lý dừng app thực tế
+    flash(f"Đã gửi yêu cầu dừng app #{app_id}", "warning")
+    return redirect(url_for("deployed_app.list_app"))
+
+
+@deployed_app_bp.route("/confirm-facebook/<int:app_id>", methods=["POST"])
+@login_required
+def confirm_facebook(app_id):
+    print(f"[ACTION] Xác nhận liên kết Facebook cho app ID: {app_id}")
+    # TODO: xử lý xác minh domain Facebook
+    flash(f"Đã gửi yêu cầu xác minh Facebook cho app #{app_id}", "success")
+    return redirect(url_for("deployed_app.list_app"))
+
+
+@deployed_app_bp.route("/redeploy/<int:app_id>", methods=["POST"])
+@login_required
+def redeploy_app(app_id):
+    print(f"[ACTION] Deploy lại app ID: {app_id}")
+    # TODO: thực hiện lại thao tác deploy (có thể tái sử dụng background_deploy)
+    flash(f"Đang thực hiện lại deploy app #{app_id}", "danger")
+    return redirect(url_for("deployed_app.list_app"))
+
+@deployed_app_bp.route("/detail/<int:app_id>")
+@login_required
+def detail_app(app_id):
+    app = DeployedApp.query.get_or_404(app_id)
+    server = Server.query.get_or_404(app.server_id)
+    domain = Domain.query.get_or_404(app.domain_id)
+    verification = DomainVerification.query.filter_by(deployed_app_id=app.id).first()
+    return render_template(
+        "deployed_app/app_detail.html",
+        app=app,
+        server=server,
+        domain=domain,
+        verification=verification,
+    )
