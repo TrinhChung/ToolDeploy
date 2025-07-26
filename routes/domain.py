@@ -79,8 +79,6 @@ def add_domain():
 @domain_bp.route("/verify/<int:domain_id>", methods=["GET", "POST"])
 @login_required
 def verify_domain(domain_id):
-    if not current_user.is_admin:
-        abort(403)
     domain = Domain.query.get_or_404(domain_id)
     nameservers = []
     if domain.cloudflare_account:
