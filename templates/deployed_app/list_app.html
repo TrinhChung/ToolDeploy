@@ -115,9 +115,6 @@
 							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 							<button type="submit" class="btn btn-sm btn-outline-danger">Deploy lại</button>
 						</form>
-						{% else %}
-						<span class="text-muted">Không khả dụng</span>
-						{% endif %}
 					</td>
 				</tr>
 				{% endfor %}
