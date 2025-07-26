@@ -31,7 +31,6 @@ def sync_domains_from_cf_with_account(cf_account):
     Đồng bộ domain từ Cloudflare về DB (theo 1 tài khoản Cloudflare).
     Gán cloudflare_account_id cho domain, đồng bộ luôn DNS record từng domain.
     """
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
 
@@ -65,7 +64,6 @@ def sync_domains_from_cf_with_account(cf_account):
 
 def create_cloudflare_zone(domain_name, cf_account):
     """Tạo zone mới trên Cloudflare (multi-account, truyền cf_account)."""
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
     payload = {
@@ -112,7 +110,6 @@ def sync_dns_records_for_domain(domain_obj, cf_account):
     db.session.commit()
 
 def get_dns_records(zone_id, cf_account):
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
     resp = requests.get(f"{BASE_URL}/zones/{zone_id}/dns_records", headers=headers)
@@ -146,7 +143,6 @@ def get_dns_records(zone_id, cf_account):
 
 def add_dns_record(zone_id, record_name, record_content, record_type="A", ttl=3600, proxied=False, cf_account=None):
     """Thêm bản ghi DNS vào Cloudflare (admin only, multi-account)."""
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
     url = f"{BASE_URL}/zones/{zone_id}/dns_records"
@@ -196,7 +192,6 @@ def add_or_update_txt_record(
     - Nếu đã có nhưng khác nội dung thì cập nhật.
     - Nếu đã đúng nội dung thì không làm gì.
     """
-    _admin_guard()
     BASE_URL = "https://api.cloudflare.com/client/v4"
     headers = build_cf_headers(cf_account)
     record_name = f"{subdns}.{dns}" if subdns else dns
