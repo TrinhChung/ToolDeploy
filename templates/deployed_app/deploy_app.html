@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container py-4">
 	<h2 class="mb-4"><i class="fa fa-plus text-primary me-2"></i>Deploy App Mới</h2>
-	<form method="POST" id="deployAppForm" novalidate>
+	<form method="POST" id="deployAppForm" novalidate autocomplete="off">
 		{{ form.hidden_tag() }}
 		<div class="row g-3 mb-3">
 			<div class="col-md-6">
@@ -18,7 +18,7 @@
 			<div class="col-md-6">
 				{{ form.subdomain.label(class="form-label") }}<span class="text-danger ms-1">*</span>
 				{{ form.subdomain(class="form-control", required=True, placeholder="Nhập subdomain (không nhập @)") }}
-				<small class="form-text text-muted">Subdomain là bắt buộc. Không nhập @ hoặc để trống.</small>
+				<small class="form-text text-muted">Subdomain là bắt buộc, không nhập @ hoặc để trống.</small>
 				<div class="invalid-feedback" id="subdomainError"></div>
 			</div>
 			<div class="col-md-6">
@@ -33,39 +33,43 @@
 				<div class="row g-3">
 					<div class="col-md-4">
 						{{ form.APP_ID.label(class="form-label") }}
-						{{ form.APP_ID(class="form-control") }}
+						{{ form.APP_ID(class="form-control", placeholder="VD: 1446880516636968") }}
 					</div>
 					<div class="col-md-4">
 						{{ form.APP_SECRET.label(class="form-label") }}
-						{{ form.APP_SECRET(class="form-control") }}
+						{{ form.APP_SECRET(class="form-control", placeholder="Mã bí mật ứng dụng Facebook") }}
 					</div>
 					<div class="col-md-4">
 						{{ form.APP_NAME.label(class="form-label") }}
-						{{ form.APP_NAME(class="form-control") }}
+						{{ form.APP_NAME(class="form-control", placeholder="VD: Manage Campaign") }}
 					</div>
+		
 					<div class="col-md-4">
 						{{ form.EMAIL.label(class="form-label") }}
-						{{ form.EMAIL(class="form-control") }}
+						{{ form.EMAIL(class="form-control", placeholder="VD: example@gmail.com") }}
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-4">
 						{{ form.ADDRESS.label(class="form-label") }}
-						{{ form.ADDRESS(class="form-control") }}
+						{{ form.ADDRESS(class="form-control", placeholder="VD: 147 Thái Phiên, Quận 11, TP.HCM") }}
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-4"></div> <!-- div trống để cân bằng hàng -->
+		
+					<div class="col-md-4">
 						{{ form.PHONE_NUMBER.label(class="form-label") }}
-						{{ form.PHONE_NUMBER(class="form-control") }}
+						{{ form.PHONE_NUMBER(class="form-control", placeholder="VD: 07084773586") }}
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-4">
 						{{ form.COMPANY_NAME.label(class="form-label") }}
-						{{ form.COMPANY_NAME(class="form-control") }}
+						{{ form.COMPANY_NAME(class="form-control", placeholder="VD: CÔNG TY TNHH NOIR STEED") }}
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-4">
 						{{ form.TAX_NUMBER.label(class="form-label") }}
-						{{ form.TAX_NUMBER(class="form-control") }}
+						{{ form.TAX_NUMBER(class="form-control", placeholder="VD: 0318728792") }}
 					</div>
 				</div>
 			</div>
 		</div>
+
 
 		<div class="d-flex gap-2 mt-3">
 			<button type="submit" class="btn btn-success px-4">
@@ -95,7 +99,6 @@
 	});
 
 	document.getElementById('btnDefaultEnv').addEventListener('click', function () {
-		// Gán giá trị mặc định vào các trường
 		document.querySelector('input[name="EMAIL"]').value = "chungtrinh2k2@gmail.com";
 		document.querySelector('input[name="ADDRESS"]').value = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam";
 		document.querySelector('input[name="PHONE_NUMBER"]').value = "07084773586";
@@ -111,6 +114,11 @@
 
 	.form-label {
 		font-weight: 500;
+	}
+
+	.form-control,
+	.form-select {
+		border-radius: 0.35rem;
 	}
 
 	.btn-success {
