@@ -33,8 +33,6 @@ class AddDomainForm(DomainForm):
 @domain_bp.route("/add", methods=["GET", "POST"])
 @login_required
 def add_domain():
-    if not current_user.is_admin:
-        abort(403)
     accounts = CloudflareAccount.query.all()
     form = AddDomainForm()
     # Gán choices cho select
