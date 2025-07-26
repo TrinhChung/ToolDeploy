@@ -97,8 +97,10 @@ def verify_domain(domain_id):
     form = DummyDeleteForm()  # Có CSRF cho nút xác thực nếu cần
 
     if request.method == "POST":
-        # TODO: Có thể gọi hàm sync cho đúng account ở đây (nếu cần)
-        flash("Chức năng đồng bộ domain đã chuyển sang trang quản lý Cloudflare Account.", "info")
+        # Cập nhật trạng thái domain sang "verifying"
+        domain.status = "verifying"
+        db.session.commit()
+        flash("Đã chuyển sang trạng thái xác thực (verifying) cho domain!", "info")
         return redirect(url_for("domain.verify_domain", domain_id=domain.id))
 
     return render_template(

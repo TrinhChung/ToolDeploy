@@ -67,8 +67,15 @@
 			Xác Thực Domain
 		</h2>
 		<div>
-			<span class="badge bg-{{ 'success' if domain.status=='active' else 'warning text-dark' }}">
-				{{ "Đã xác thực" if domain.status=='active' else "Chưa xác thực" }}
+			{% set status_map = {
+				"active": ("success", "Đã xác thực"),
+				"pending": ("warning text-dark", "Chưa xác thực"),
+				"verifying": ("info text-dark", "Đang xác thực"),
+				"failed": ("danger", "Xác thực thất bại")
+			} %}
+			{% set badge_class, status_text = status_map.get(domain.status, ("secondary", domain.status)) %}
+			<span class="badge bg-{{ badge_class }}">
+				{{ status_text }}
 			</span>
 		</div>
 	</div>
@@ -121,18 +128,25 @@
 		Sau khi cập nhật, hãy lưu lại cấu hình. Quá trình xác thực có thể mất từ <b>5 phút đến 48 giờ</b> (đa số dưới 2h).
 	</p>
 
-	{% if domain.status != "active" %}
+	{# PHẦN FORM/ALERT BUTTON THEO TRẠNG THÁI #}
+	{% if domain.status == "active" %}
+	<div class="alert alert-success mt-4">
+		<i class="fa fa-check-circle"></i>
+		<strong>Domain của bạn đã xác thực thành công trên Cloudflare!</strong>
+	</div>
+	{% elif domain.status == "verifying" %}
+	<div class="alert alert-info mt-4">
+		<i class="fa fa-spinner fa-spin"></i>
+		<strong>Đang xác thực nameserver... Vui lòng chờ!</strong>
+		<br><small class="text-muted">Quá trình này có thể mất từ 5 phút đến 48 giờ.</small>
+	</div>
+	{% else %}
 	<form method="POST" class="my-4">
 		{{ form.csrf_token }}
 		<button type="submit" class="btn btn-success btn-lg btn-block">
 			<i class="fa fa-check"></i> Tôi đã cập nhật Nameservers &mdash; Xác thực lại
 		</button>
 	</form>
-	{% else %}
-	<div class="alert alert-success mt-4">
-		<i class="fa fa-check-circle"></i>
-		<strong>Domain của bạn đã xác thực thành công trên Cloudflare!</strong>
-	</div>
 	{% endif %}
 
 	<div class="mt-3">
