@@ -16,7 +16,7 @@ from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
-from bash_script.remote_deploy import run_remote_deploy
+from bash_script.remote_deploy import run_remote_deploy, remote_turn_off
 from util.cloud_flare import (
     check_dns_record_exists,
     add_dns_record,
@@ -281,7 +281,20 @@ def add_dns_txt(app_id):
 def stop_app(app_id):
     print(f"[ACTION] Dừng app ID: {app_id}")
     # TODO: xử lý dừng app thực tế
-    flash(f"Đã gửi yêu cầu dừng app #{app_id}", "warning")
+    try:
+        app = DeployedApp.query.get_or_404(app_id)
+        server = app.server
+        flash(f"Đã gửi yêu cầu dừng app #{app_id}", "warning")
+        out = remote_turn_off(host=server.ip, user=server.admin_username, password=server.admin_password, subdomain=app.subdomain)
+        app.status = "inactive"
+        app.log = out
+        logger.info(f"Tắt app thành công:\n{out}")
+    except Exception as e:
+            app.status = "failed"
+            app.log = str(e)
+            logger.error(f"Lỗi dừng app:\n{str(e)}")
+    finally:
+            db.session.commit()
     return redirect(url_for("deployed_app.list_app"))
 
 

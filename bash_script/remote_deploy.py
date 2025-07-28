@@ -2,6 +2,79 @@ import paramiko
 from typing import Optional
 import os
 
+def remote_turn_on(
+    host: str,
+    user: str,
+    *,
+    password: str,
+    subdomain: str,
+    port: str,   
+) -> str:
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(
+        hostname=host,
+        username=user,
+        password=password,
+        timeout=20,
+        allow_agent=False,
+        look_for_keys=False,
+    )
+    cmd = f"""
+        FOLDER="/home/{subdomain}"; \
+        cd $FOLDER \
+        nohup bash -c 'stdbuf -oL -eL flask run --host=0.0.0.0 --port=={port} 2>&1 | ts "[%Y-%m-%d %H:%M:%S]"' >> flask.log & \
+        """
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+
+    exit_status = stdout.channel.recv_exit_status()
+    out, err = stdout.read().decode(), stderr.read().decode()
+    
+    ssh.close()
+
+    if exit_status != 0:
+        raise RuntimeError(f"Remote script execution failed:\n{err}")
+    return out
+    
+
+def remote_turn_off(
+    host: str,
+    user: str,
+    *,
+    password: str,
+    subdomain: str,
+) -> str:
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(
+        hostname=host,
+        username=user,
+        password=password,
+        timeout=20,
+        allow_agent=False,
+        look_for_keys=False,
+    )
+    cmd = f"""
+        FOLDER="/home/{subdomain}"; \
+        for pid in $(pgrep -f "flask run"); do \
+        pwd_env=$(cat /proc/$pid/environ 2>/dev/null | tr '\\0' '\\n' | grep '^PWD=' | cut -d= -f2); \
+        if [ "$pwd_env" = "$FOLDER" ]; then \
+            echo "Killing PID $pid in $FOLDER"; \
+            kill $pid; \
+        fi; \
+        done
+        """
+    stdin, stdout, stderr = ssh.exec_command(cmd)
+
+    exit_status = stdout.channel.recv_exit_status()
+    out, err = stdout.read().decode(), stderr.read().decode()
+    
+    ssh.close()
+
+    if exit_status != 0:
+        raise RuntimeError(f"Remote script execution failed:\n{err}")
+    return out
+
 def run_remote_deploy(
     host: str,
     user: str,

@@ -29,6 +29,14 @@ elseC
   echo "✅ Git đã được cài."
 fi
 
+# --- Moreuntils ---
+if ! command -v ts >/dev/null 2>&1; then
+  echo "Cài đặt moreutils..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y moreutils
+else
+  echo "moreutils đã được cài."
+fi
+
 # --- Nginx ---
 if ! dpkg -s nginx &> /dev/null; then
   echo "🌐 Cài đặt Nginx..."
@@ -137,21 +145,8 @@ fi
 echo
 echo "Đổi port ứng với số container"
 cd "$TARGET_DIR" || { echo "Thư mục không tồn tại!"; exit 1; }
-count=$(docker ps -a --filter "name=flask-app" --format "{{.Names}}" | wc -l)
-new_port=$((5000 + count))
-yq eval ".services.flask-app.ports = [\"${new_port}:5000\"]" -i docker-compose.yml
-
-echo "Đã đặt ports thành ${new_port}:5000 trong docker-compose.yml"
-
-# --- xử lý port ---
-echo
-echo "Đổi port ứng với số container"
-cd "$TARGET_DIR" || { echo "Thư mục không tồn tại!"; exit 1; }
-COUNT=$(docker ps -a --filter "name=flask-app" --format "{{.Names}}" | wc -l)
+count=$(ps aux | grep "flask run" | grep -v grep | wc -l)
 NEW_PORT=$((5000 + count))
-yq eval ".services.flask-app.ports = [\"${NEW_PORT}:5000\"]" -i docker-compose.yml
-
-echo "Đã đặt ports thành ${new_port}:5000 trong docker-compose.yml"
 
 echo
 echo "nhập thông tin env"
@@ -309,7 +304,7 @@ else
     #pip install --upgrade pip
     pip install -r requirements.txt
     flask db upgrade &&
-    nohup flask run --host=0.0.0.0 --port=$NEW_PORT &
+    nohup bash -c 'stdbuf -oL -eL flask run --host=0.0.0.0 --port=$NEW_PORT 2>&1 | ts "[%Y-%m-%d %H:%M:%S]"' >> flask.log &
   else
       echo "Lệnh thất bại"
   fi
