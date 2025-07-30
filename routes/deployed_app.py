@@ -55,10 +55,8 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             logger.info(f"Deploy thành công:\n{log}")
 
             # === UPDATE PROXY A RECORD ===
-            # Chỉ chạy nếu có subdomain (tức là deploy subdomain)
             if deployed_app.subdomain:
                 domain = Domain.query.get(deployed_app.domain_id)
-                print(f"Domain: {domain.name}, Zone ID: {domain.zone_id}")
                 cf_account = domain.cloudflare_account
                 zone_id = domain.zone_id
                 record_name = f"{deployed_app.subdomain}.{domain.name}"
@@ -86,6 +84,8 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             logger.error(f"Deploy lỗi:\n{str(e)}")
         finally:
             db.session.commit()
+            db.session.refresh(deployed_app)  # <--- Quan trọng!
+            db.session.expire_all()  # Đảm bảo các query sau sẽ luôn lấy bản mới nhất
 
 
 def fill_default_env(form):
@@ -123,6 +123,7 @@ def create_deployed_app(form, dns_web, env_text):
     )
     db.session.add(deployed_app)
     db.session.commit()
+    db.session.refresh(deployed_app)
     return deployed_app
 
 
@@ -219,6 +220,8 @@ def deploy_app():
 @deployed_app_bp.route("/list")
 @login_required
 def list_app():
+    # Luôn expire session để lấy dữ liệu mới nhất từ DB (tránh cache)
+    db.session.expire_all()
     deployed_apps = (
         db.session.query(DeployedApp, Server, Domain)
         .join(Server, DeployedApp.server_id == Server.id)
@@ -228,6 +231,7 @@ def list_app():
     )
     return render_template("deployed_app/list_app.html", deployed_apps=deployed_apps)
 
+
 @deployed_app_bp.route("/add-dns-txt/<int:app_id>", methods=["POST"])
 @login_required
 def add_dns_txt(app_id):
@@ -236,12 +240,10 @@ def add_dns_txt(app_id):
         flash("Vui lòng nhập nội dung TXT xác minh!", "warning")
         return redirect(url_for("deployed_app.list_app"))
     try:
-        # Lấy thông tin app, domain, Cloudflare account
         app = DeployedApp.query.get_or_404(app_id)
         domain = Domain.query.get_or_404(app.domain_id)
         cf_account = domain.cloudflare_account
         subdomain = app.subdomain or ""
-        # Gọi hàm xử lý thêm/cập nhật TXT (Cloudflare)
         result = add_or_update_txt_record(
             zone_id=domain.zone_id,
             subdns=subdomain,
@@ -267,9 +269,10 @@ def add_dns_txt(app_id):
             db.session.add(verification)
         # ==============================================
 
-        # Update trạng thái app
         app.status = "add_txt"
         db.session.commit()
+        db.session.refresh(app)
+        db.session.expire_all()
         flash("Đã thêm/cập nhật bản ghi TXT thành công!", "success")
     except Exception as e:
         flash(f"Lỗi khi thêm/cập nhật bản ghi TXT: {e}", "danger")
@@ -285,16 +288,23 @@ def stop_app(app_id):
         app = DeployedApp.query.get_or_404(app_id)
         server = app.server
         flash(f"Đã gửi yêu cầu dừng app #{app_id}", "warning")
-        out = remote_turn_off(host=server.ip, user=server.admin_username, password=server.admin_password, subdomain=app.subdomain)
+        out = remote_turn_off(
+            host=server.ip,
+            user=server.admin_username,
+            password=server.admin_password,
+            subdomain=app.subdomain,
+        )
         app.status = "inactive"
         app.log = out
         logger.info(f"Tắt app thành công:\n{out}")
     except Exception as e:
-            app.status = "failed"
-            app.log = str(e)
-            logger.error(f"Lỗi dừng app:\n{str(e)}")
+        app.status = "failed"
+        app.log = str(e)
+        logger.error(f"Lỗi dừng app:\n{str(e)}")
     finally:
-            db.session.commit()
+        db.session.commit()
+        db.session.refresh(app)
+        db.session.expire_all()
     return redirect(url_for("deployed_app.list_app"))
 
 
@@ -302,7 +312,6 @@ def stop_app(app_id):
 @login_required
 def confirm_facebook(app_id):
     print(f"[ACTION] Xác nhận liên kết Facebook cho app ID: {app_id}")
-    # TODO: xử lý xác minh domain Facebook
     flash(f"Đã gửi yêu cầu xác minh Facebook cho app #{app_id}", "success")
     return redirect(url_for("deployed_app.list_app"))
 
@@ -311,13 +320,15 @@ def confirm_facebook(app_id):
 @login_required
 def redeploy_app(app_id):
     print(f"[ACTION] Deploy lại app ID: {app_id}")
-    # TODO: thực hiện lại thao tác deploy (có thể tái sử dụng background_deploy)
     flash(f"Đang thực hiện lại deploy app #{app_id}", "danger")
+    # TODO: thực hiện lại thao tác deploy nếu muốn
     return redirect(url_for("deployed_app.list_app"))
+
 
 @deployed_app_bp.route("/detail/<int:app_id>")
 @login_required
 def detail_app(app_id):
+    db.session.expire_all()
     app = DeployedApp.query.get_or_404(app_id)
     server = Server.query.get_or_404(app.server_id)
     domain = Domain.query.get_or_404(app.domain_id)
