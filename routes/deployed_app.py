@@ -30,68 +30,92 @@ deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app"
 logger = logging.getLogger("deploy_logger")
 
 
+import logging
+from database_init import (
+    db,
+    Session,
+)  # đảm bảo có Session = scoped_session(sessionmaker(bind=engine))
+
+
 def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns_web):
-    with app.app_context():
-        deployed_app = DeployedApp.query.get(deployed_app_id)
-        server = Server.query.get(server_id)
-        print("chạy vào background deploy")
-        try:
-            log = run_remote_deploy(
-                host=server.ip,
-                user=server.admin_username,
-                password=server.admin_password,
-                input_dir=input_dir,
-                appId=form_data["APP_ID"],
-                appSecret=form_data["APP_SECRET"],
-                appName=form_data["APP_NAME"],
-                email=form_data["EMAIL"],
-                address=form_data["ADDRESS"],
-                phoneNumber=form_data["PHONE_NUMBER"],
-                dnsWeb=dns_web,
-                companyName=form_data["COMPANY_NAME"],
-                taxNumber=form_data["TAX_NUMBER"],
+    # Bắt mọi lỗi từ ngoài vào trong!
+    try:
+        with app.app_context():
+            logger = logging.getLogger("deploy_logger")
+            logger.info("===> Thread deploy START")
+
+            # Tạo session mới cho thread (giải pháp triệt để nhất)
+            session = (
+                db.create_scoped_session()
+                if hasattr(db, "create_scoped_session")
+                else db.session
             )
-            print((f"Deploy thành công:\n{log}"))
-            deployed_app.status = "active"
-            deployed_app.log = log
-            logger.info(f"Deploy thành công:\n{log}")
 
-            # === UPDATE PROXY A RECORD ===
-            if deployed_app.subdomain:
-                domain = Domain.query.get(deployed_app.domain_id)
-                cf_account = domain.cloudflare_account
-                zone_id = domain.zone_id
-                record_name = f"{deployed_app.subdomain}.{domain.name}"
-                record_id = get_record_id_by_name(
-                    zone_id, record_name, "A", cf_account=cf_account
+            deployed_app = session.query(DeployedApp).get(deployed_app_id)
+            server = session.query(Server).get(server_id)
+            logger.info("Đã vào background_deploy, lấy được app và server")
+
+            try:
+                log = run_remote_deploy(
+                    host=server.ip,
+                    user=server.admin_username,
+                    password=server.admin_password,
+                    input_dir=input_dir,
+                    appId=form_data["APP_ID"],
+                    appSecret=form_data["APP_SECRET"],
+                    appName=form_data["APP_NAME"],
+                    email=form_data["EMAIL"],
+                    address=form_data["ADDRESS"],
+                    phoneNumber=form_data["PHONE_NUMBER"],
+                    dnsWeb=dns_web,
+                    companyName=form_data["COMPANY_NAME"],
+                    taxNumber=form_data["TAX_NUMBER"],
                 )
-                if record_id:
-                    try:
-                        update_dns_record(
-                            zone_id=zone_id,
-                            record_id=record_id,
-                            record_name=record_name,
-                            record_content=server.ip,
-                            record_type="A",
-                            proxied=True,
-                            cf_account=cf_account,
-                        )
-                        logger.info(f"Đã cập nhật proxied=True cho {record_name}")
-                        print(f"✅ Đã cập nhật bản ghi A {record_name} thành công!")
-                    except Exception as e:
-                        logger.error(f"Lỗi khi cập nhật proxied: {e}")
-                        print(f"❌ Lỗi khi cập nhật bản ghi A {record_name}: {e}")
+                logger.info(f"Deploy thành công: {log}")
+                deployed_app.status = "active"
+                deployed_app.log = log
 
-        except Exception as e:
-            deployed_app.status = "failed"
-            deployed_app.log = str(e)
-            logger.error(f"Deploy lỗi:\n{str(e)}")
-            print(f"❌ Deploy lỗi:\n{str(e)}")
-        finally:
-            db.session.commit()
-            db.session.refresh(deployed_app)  # <--- Quan trọng!
-            db.session.expire_all()  # Đảm bảo các query sau sẽ luôn lấy bản mới nhất
-            print(f"App {deployed_app.id} đã được cập nhật trạng thái: {deployed_app.status}")
+                if deployed_app.subdomain:
+                    domain = session.query(Domain).get(deployed_app.domain_id)
+                    cf_account = domain.cloudflare_account
+                    zone_id = domain.zone_id
+                    record_name = f"{deployed_app.subdomain}.{domain.name}"
+                    record_id = get_record_id_by_name(
+                        zone_id, record_name, "A", cf_account=cf_account
+                    )
+                    if record_id:
+                        try:
+                            update_dns_record(
+                                zone_id=zone_id,
+                                record_id=record_id,
+                                record_name=record_name,
+                                record_content=server.ip,
+                                record_type="A",
+                                proxied=True,
+                                cf_account=cf_account,
+                            )
+                            logger.info(f"Đã cập nhật proxied=True cho {record_name}")
+                        except Exception as e:
+                            logger.error(f"Lỗi khi cập nhật proxied: {e}")
+
+            except Exception as e:
+                deployed_app.status = "failed"
+                deployed_app.log = str(e)
+                logger.error(f"Deploy lỗi: {str(e)}")
+            finally:
+                session.commit()
+                session.refresh(deployed_app)
+                session.close()
+                logger.info(
+                    f"App {deployed_app.id} đã được cập nhật trạng thái: {deployed_app.status}"
+                )
+    except Exception as e:
+        # Print ra file riêng nếu logger chưa hoạt động!
+        with open("/tmp/deploy_thread_fatal.log", "a") as f:
+            f.write(f"Lỗi to nhất ở ngoài thread: {e}\n")
+        import traceback
+
+        traceback.print_exc()
 
 
 def fill_default_env(form):
