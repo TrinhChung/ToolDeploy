@@ -119,6 +119,8 @@ def create_app():
             "video.serve_video",
             "static",
         ]
+        if request.path.startswith("/api/"):
+            return
         if not current_user.is_authenticated and request.endpoint not in allowed_routes:
             flash("You need to log in to access this page.", "danger")
             return redirect(url_for("auth.login"))
