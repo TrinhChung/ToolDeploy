@@ -119,7 +119,7 @@ def run_remote_deploy(
         sftp.close()
 
     # 🛠️ Cấp quyền thực thi và chạy file
-    cmd = f'chmod +x {remote_path} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber}'
+    cmd = f'chmod +x {remote_path} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber} >> /home/log/{input_dir}.log'
     stdin, stdout, stderr = ssh.exec_command(cmd)
 
     exit_status = stdout.channel.recv_exit_status()
