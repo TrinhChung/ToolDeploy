@@ -7,7 +7,7 @@ EMAIL="$6"
 ADDRESS="$7"
 PHONE_NUMBER="$8"
 COMPANY_NAME="$9"
-TAX_NUMBER="$10"
+TAX_NUMBER="${10}"
 TARGET_DIR="/home/$1"
 
 #!/bin/bash
@@ -57,18 +57,18 @@ else
 fi
 
 # --- Pip ---
-if ! command -V python3-pip &> /dev/null; then
+if ! command -v pip3 &> /dev/null; then
   echo "🐍 Cài đặt PIP..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
 else
   echo "✅ PIP đã được cài."
 fi
 
-if ! command -V python3-venv &> /dev/null; then
-  echo "🐍 Cài đặt PIP..."
+if ! dpkg -s python3-venv &> /dev/null; then
+  echo "🐍 Cài đặt Virtual env..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-venv
 else
-  echo "✅ PIP đã được cài."
+  echo "✅ Virtual env đã được cài."
 fi
 
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
@@ -276,18 +276,18 @@ else
   docker compose up -d --build
 fi
 
-app_container_count=$(docker ps --filter "name=$INPUT_DIR" --format "{{.Names}}" | wc -l)
+# Lặp cho đến khi MySQL sẵn sàng
+while ! ( [ "$(docker ps -a --filter "name=mysql_db" --format "{{.Names}}" | wc -l)" -eq 1 ] && docker exec mysql_db mysqladmin ping -u root -p"password123456" --silent 2>/dev/null | grep -q "mysqld is alive" ); do
+  echo "⏳ Đang chờ MySQL container khởi động và mở cổng 3306..."
+  sleep 4
+done
+
+app_container_count=$(lsof -i :$NEW_PORT | grep 'flask' | wc -l)
 if [ "$app_container_count" -eq 1 ]; then
-  echo "✅ App đã chạy thành công"
+  echo "Đã có app chạy ở cổng này"
+  exit 1
 else
-  echo "🕓 Đang chờ MySQL container sẵn sàng..."
-
-  # Lặp cho đến khi MySQL sẵn sàng
-  while ! ( [ "$(docker ps -a --filter "name=mysql_db" --format "{{.Names}}" | wc -l)" -eq 1 ] && docker exec mysql_db mysqladmin ping -u root -p"password123456" --silent 2>/dev/null | grep -q "mysqld is alive" ); do
-    echo "⏳ Đang chờ MySQL container khởi động và mở cổng 3306..."
-    sleep 4
-  done
-
+  echo "MySQL container đã sẵn sàng..."
   echo "🚀 Khởi động ứng dụng..."
   if [ -d "/home/myenv" ]; then
     echo "Folder tồn tại"
@@ -307,5 +307,11 @@ else
     nohup bash -c 'stdbuf -oL -eL flask run --host=0.0.0.0 --port=$NEW_PORT 2>&1 | ts "[%Y-%m-%d %H:%M:%S]"' >> flask.log &
   else
       echo "Lệnh thất bại"
+  fi
+
+  sleep 5
+  if ! nc -zv 127.0.0.1 "$NEW_PORT"; then
+      echo "Flask app failed to start on port $NEW_PORT"
+      exit 1
   fi
 fi
