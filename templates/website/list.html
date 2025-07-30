@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Danh sách Website{% endblock %}
+
+{% block content %}
+<h2>Danh sách Website</h2>
+<a href="{{ url_for('website.add_website') }}" class="btn btn-primary mb-3">+ Thêm website</a>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Công ty</th>
+            <th>DNS Record</th>
+            <th>Template</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for w in websites %}
+        <tr>
+            <td>{{ w.id }}</td>
+            <td>{{ w.company.name if w.company else '' }}</td>
+            <td>{{ w.dns_record.name if w.dns_record else '' }}</td>
+            <td>{{ w.template.name if w.template else 'N/A' }}</td>
+            <td>
+                <form action="{{ url_for('website.delete_website', website_id=w.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Xóa website này?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

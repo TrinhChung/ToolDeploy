@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Sửa Công ty{% endblock %}
+
+{% block content %}
+<h2>Sửa Công ty</h2>
+<form method="post">
+    {% include "company/form_fields.html" %}
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
+    <a href="{{ url_for('company.company_detail', company_id=company.id) }}" class="btn btn-secondary">Hủy</a>
+</form>
+{% endblock %}

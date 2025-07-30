@@ -11,6 +11,8 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)  # Quyền admin, mặc định user thường
     
     domains = db.relationship("Domain", back_populates="user", lazy=True)
+    companies = db.relationship('Company', back_populates='user')
+    websites = db.relationship('Website', back_populates='user')
 
     # Optional: property cho Flask-Login
     def get_id(self):

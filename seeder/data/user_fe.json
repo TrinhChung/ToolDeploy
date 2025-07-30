@@ -1,0 +1,33 @@
+[
+  {
+    "name": "Aleksandar",
+    "lastname": "Kuzmanovic",
+    "email": "aleksandarkuzmanovic021@gmail.com",
+    "password": "1233214321",
+    "id": 1
+  },
+  {
+    "name": "Bojan",
+    "lastname": "Cesnak",
+    "email": "bc22@gmail.com",
+    "password": "123321",
+    "confirmPassword": "123321",
+    "id": 2
+  },
+  {
+    "name": "A",
+    "lastname": "A",
+    "email": "a@gmail.com",
+    "password": "123321",
+    "confirmPassword": "123321",
+    "id": 3
+  },
+  {
+    "name": "Lebron",
+    "lastname": "James",
+    "email": "lebronjames@gmail.com",
+    "password": "1233214321",
+    "confirmPassword": "1233214321",
+    "id": 4
+  }
+]

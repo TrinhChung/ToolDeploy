@@ -1,0 +1,200 @@
+[
+  {
+    "title": "Luxury Dress",
+    "image": "product image 1.jpg",
+    "category": "special-edition",
+    "price": 3500,
+    "popularity": 5,
+    "stock": 10,
+    "description": "A premium dress perfect for both parties and business events.",
+    "detail": "Made from imported silk, A-line design, elegant color palette, fits all body shapes. Breathable and comfortable for all-day wear.",
+    "delivery_detail": "Nationwide fast delivery within 2-3 days. Free shipping in major cities."
+  },
+  {
+    "title": "Luxury Black Clothing",
+    "image": "product image 2.jpg",
+    "category": "luxury-collection",
+    "price": 1050,
+    "popularity": 4,
+    "stock": 20,
+    "description": "High-end black jacket suitable for any weather.",
+    "detail": "Cotton fabric, wrinkle-resistant, easy to care for. Available in sizes S to XXL.",
+    "delivery_detail": "Nationwide delivery, free returns within 7 days."
+  },
+  {
+    "title": "Luxury Blue Dress",
+    "image": "product image 3.jpg",
+    "category": "summer-edition",
+    "price": 5000,
+    "popularity": 3,
+    "stock": 5,
+    "description": "Blue summer dress for a fresh and modern look.",
+    "detail": "Lightweight material, soft lining, perfect for hot days.",
+    "delivery_detail": "Ships within 24 hours. Free express shipping for orders over $100."
+  },
+  {
+    "title": "Special Brown Dress",
+    "image": "product image 4.jpg",
+    "category": "unique-collection",
+    "price": 2500,
+    "popularity": 2,
+    "stock": 15,
+    "description": "Unique brown dress for an elegant and distinct appearance.",
+    "detail": "Exclusive fabric, handmade stitches, limited edition.",
+    "delivery_detail": "Nationwide delivery in 3 days. Free gift wrap available."
+  },
+  {
+    "title": "Special Luxury Dress",
+    "image": "product image 5.jpg",
+    "category": "unique-collection",
+    "price": 5200,
+    "popularity": 1,
+    "stock": 0,
+    "description": "Limited edition luxury dress with sophisticated style.",
+    "detail": "Finest materials, detailed craftsmanship, best for exclusive events.",
+    "delivery_detail": "Pre-order only. Delivery within 10 business days."
+  },
+  {
+    "title": "Super Luxury Dress",
+    "image": "product image 6.jpg",
+    "category": "luxury-collection",
+    "price": 8500,
+    "popularity": 20,
+    "stock": 20,
+    "description": "A super luxury dress to stand out in any occasion.",
+    "detail": "Premium imported silk, delicate patterns, superior comfort.",
+    "delivery_detail": "Express shipping in 1-2 days. Free premium garment bag."
+  },
+  {
+    "title": "Luxury Brown Dress",
+    "image": "product image 7.jpg",
+    "category": "luxury-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Elegant brown dress from the luxury collection.",
+    "detail": "Classic cut, versatile for day and night events.",
+    "delivery_detail": "Standard shipping 3-5 days. Free return policy."
+  },
+  {
+    "title": "Premium Brown Dress",
+    "image": "product image 8.jpg",
+    "category": "unique-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Premium brown dress for a classic and refined look.",
+    "detail": "Soft wool-blend fabric, tailored fit, durable and stylish.",
+    "delivery_detail": "Delivered within 5 days. Free size adjustment."
+  },
+  {
+    "title": "Luxury White Dress",
+    "image": "product image 9.jpg",
+    "category": "luxury-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "White dress from our luxury collection.",
+    "detail": "Flowy design, lightweight and elegant, suitable for summer events.",
+    "delivery_detail": "Fast shipping. Free returns within 7 days."
+  },
+  {
+    "title": "Brown Limited Collection",
+    "image": "product image 10.jpg",
+    "category": "unique-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Special brown dress from our limited collection.",
+    "detail": "Limited stock, classic brown shade, comfortable fit.",
+    "delivery_detail": "Delivered in 2-4 days. Gift bag included."
+  },
+  {
+    "title": "Golden Premium T-shirt",
+    "image": "product image 11.jpg",
+    "category": "luxury-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Premium golden T-shirt, stylish and comfortable.",
+    "detail": "Shimmering fabric, modern cut, unisex design.",
+    "delivery_detail": "Ships same day. Free exchange within 7 days."
+  },
+  {
+    "title": "Golden T-shirt",
+    "image": "product image 12.jpg",
+    "category": "summer-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Golden T-shirt from summer edition.",
+    "detail": "Breathable cotton, lightweight and trendy.",
+    "delivery_detail": "Free shipping for orders over $50."
+  },
+  {
+    "title": "White Premium T-shirt",
+    "image": "product image 13.jpg",
+    "category": "special-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Premium white T-shirt, a must-have for any wardrobe.",
+    "detail": "Ultra-soft fabric, durable and easy to match.",
+    "delivery_detail": "Shipping in 1-2 days. 30-day return policy."
+  },
+  {
+    "title": "Brown Premium T-shirt",
+    "image": "product image 14.jpg",
+    "category": "special-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Brown premium T-shirt for a casual yet elegant look.",
+    "detail": "Organic cotton, relaxed fit, eco-friendly packaging.",
+    "delivery_detail": "Delivered within 3 days. Free returns."
+  },
+  {
+    "title": "Brown Special Clothing",
+    "image": "product image 15.jpg",
+    "category": "special-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Special edition brown clothing item.",
+    "detail": "Contemporary design, premium materials.",
+    "delivery_detail": "Free standard shipping. Exchange available."
+  },
+  {
+    "title": "White Special Clothing",
+    "image": "product image 16.jpg",
+    "category": "special-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Special white clothing from our signature edition.",
+    "detail": "Minimalist style, lightweight and soft.",
+    "delivery_detail": "Shipping in 3-5 days. Easy returns."
+  },
+  {
+    "title": "Dark Special Clothing",
+    "image": "product image 17.jpg",
+    "category": "special-edition",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Dark-colored clothing for a strong statement.",
+    "detail": "Modern cut, comfortable material, perfect for night events.",
+    "delivery_detail": "Express shipping. Gift wrapping available."
+  },
+  {
+    "title": "Brown Premium Clothing",
+    "image": "product image 18.jpg",
+    "category": "unique-collection",
+    "price": 4500,
+    "popularity": 5,
+    "stock": 500,
+    "description": "Premium brown clothing from the unique collection.",
+    "detail": "Artisan quality, high durability, soft to the touch.",
+    "delivery_detail": "Ships in 2-3 days. Free size adjustment."
+  }
+]

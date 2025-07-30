@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Chi tiết Công ty{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2>
+        <i class="bi bi-building text-primary me-2"></i> Chi tiết Công ty
+    </h2>
+    <div>
+        <a href="{{ url_for('company.edit_company', company_id=company.id) }}" class="btn btn-warning me-2">
+            <i class="bi bi-pencil-square"></i> Sửa thông tin
+        </a>
+        <a href="{{ url_for('company.list_companies') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-8 col-md-7">
+        <table class="table table-bordered align-middle shadow-sm">
+            <tbody>
+                <tr>
+                    <th width="180">ID</th>
+                    <td>{{ company.id }}</td>
+                </tr>
+                <tr>
+                    <th>Tên công ty</th>
+                    <td class="fw-bold fs-5">{{ company.name }}</td>
+                </tr>
+                <tr>
+                    <th>Địa chỉ</th>
+                    <td>{{ company.address }}</td>
+                </tr>
+                <tr>
+                    <th>Email</th>
+                    <td><a href="mailto:{{ company.email }}">{{ company.email }}</a></td>
+                </tr>
+                <tr>
+                    <th>Hotline</th>
+                    <td>
+                        {% if company.hotline %}
+                            <a href="tel:{{ company.hotline }}" class="text-success fw-semibold">{{ company.hotline }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>License No.</th>
+                    <td>{{ company.license_no }}</td>
+                </tr>
+                <tr>
+                    <th>Mô tả</th>
+                    <td>{{ company.description }}</td>
+                </tr>
+                <tr>
+                    <th>Footer</th>
+                    <td>{{ company.footer_text }}</td>
+                </tr>
+                <tr>
+                    <th>Note</th>
+                    <td>{{ company.note }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="col-lg-4 col-md-5">
+        <div class="mb-3">
+            <label class="fw-semibold text-secondary">Logo</label><br>
+            {% if company.logo_url %}
+                <img src="{{ company.logo_url }}" alt="Logo" class="img-thumbnail shadow-sm" style="max-height: 100px; max-width: 200px;">
+            {% else %}
+                <span class="text-muted fst-italic">Chưa có logo</span>
+            {% endif %}
+        </div>
+        <div class="mb-2">
+            <label class="fw-semibold text-secondary">Google Map</label>
+            <div class="ratio ratio-4x3 rounded shadow-sm border overflow-hidden mt-2" style="min-height:120px;">
+                {{ company.google_map_embed|safe if company.google_map_embed else "<div class='text-center text-muted pt-4'>Chưa có bản đồ</div>"|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+<div class="mb-3">
+    <label class="form-label fw-semibold">
+        <i class="bi bi-building"></i> Tên công ty <span class="text-danger">*</span>
+    </label>
+    <input type="text" name="name" value="{{ company.name if company else '' }}" required class="form-control" placeholder="VD: Công ty TNHH ABC">
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold">
+        <i class="bi bi-geo-alt"></i> Địa chỉ
+    </label>
+    <textarea name="address" class="form-control" rows="2" placeholder="Nhập địa chỉ công ty">{{ company.address if company else '' }}</textarea>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
+        <input type="email" name="email" value="{{ company.email if company else '' }}" class="form-control" placeholder="info@company.com">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label fw-semibold"><i class="bi bi-telephone"></i> Hotline</label>
+        <input type="text" name="hotline" value="{{ company.hotline if company else '' }}" class="form-control" placeholder="098xxxxxxx">
+    </div>
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold"><i class="bi bi-card-list"></i> License No.</label>
+    <input type="text" name="license_no" value="{{ company.license_no if company else '' }}" class="form-control" placeholder="Mã số/giấy phép kinh doanh">
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold"><i class="bi bi-image"></i> Logo URL</label>
+    <input type="text" name="logo_url" value="{{ company.logo_url if company else '' }}" class="form-control" placeholder="https://...">
+    {% if company.logo_url %}
+        <img src="{{ company.logo_url }}" alt="Logo preview" class="img-thumbnail mt-2" style="max-height:60px;">
+    {% endif %}
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold">
+        <i class="bi bi-map"></i> Google Map Embed (iframe)
+        <span class="text-muted fs-6">(Lấy mã nhúng từ Google Maps &rarr; Chia sẻ &rarr; Nhúng bản đồ)</span>
+    </label>
+    <textarea name="google_map_embed" class="form-control" rows="2" placeholder="&lt;iframe ...&gt;">{{ company.google_map_embed if company else '' }}</textarea>
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold"><i class="bi bi-info-circle"></i> Mô tả</label>
+    <textarea name="description" class="form-control" rows="2" placeholder="Giới thiệu ngắn gọn về công ty">{{ company.description if company else '' }}</textarea>
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold"><i class="bi bi-text-paragraph"></i> Footer</label>
+    <textarea name="footer_text" class="form-control" rows="2" placeholder="Nội dung hiển thị cuối trang">{{ company.footer_text if company else '' }}</textarea>
+</div>
+<div class="mb-3">
+    <label class="form-label fw-semibold"><i class="bi bi-sticky"></i> Note</label>
+    <textarea name="note" class="form-control" rows="1" placeholder="Ghi chú nội bộ">{{ company.note if company else '' }}</textarea>
+</div>
