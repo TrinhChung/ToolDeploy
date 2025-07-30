@@ -1,5 +1,6 @@
 import paramiko
 from typing import Optional
+from datetime import datetime
 import os
 
 def remote_turn_on(
@@ -119,7 +120,9 @@ def run_remote_deploy(
         sftp.close()
 
     # 🛠️ Cấp quyền thực thi và chạy file
-    cmd = f'chmod +x {remote_path} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber} >> /home/log/{input_dir}.log'
+    now = datetime.now()
+    logFile = f"/home/log/{now.strftime('%Y-%m-%d %H:%M:%S')}_{input_dir}.log"
+    cmd = f'touch {logFile} && chmod +x {remote_path} && chmod +x {logFile} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber} >> {logFile}'
     stdin, stdout, stderr = ssh.exec_command(cmd)
 
     exit_status = stdout.channel.recv_exit_status()
