@@ -34,6 +34,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
     with app.app_context():
         deployed_app = DeployedApp.query.get(deployed_app_id)
         server = Server.query.get(server_id)
+        print("chạy vào background deploy")
         try:
             log = run_remote_deploy(
                 host=server.ip,
