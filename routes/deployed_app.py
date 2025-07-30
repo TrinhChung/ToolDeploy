@@ -50,6 +50,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                 companyName=form_data["COMPANY_NAME"],
                 taxNumber=form_data["TAX_NUMBER"],
             )
+            print((f"Deploy thành công:\n{log}"))
             deployed_app.status = "active"
             deployed_app.log = log
             logger.info(f"Deploy thành công:\n{log}")
@@ -75,17 +76,21 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                             cf_account=cf_account,
                         )
                         logger.info(f"Đã cập nhật proxied=True cho {record_name}")
+                        print(f"✅ Đã cập nhật bản ghi A {record_name} thành công!")
                     except Exception as e:
                         logger.error(f"Lỗi khi cập nhật proxied: {e}")
+                        print(f"❌ Lỗi khi cập nhật bản ghi A {record_name}: {e}")
 
         except Exception as e:
             deployed_app.status = "failed"
             deployed_app.log = str(e)
             logger.error(f"Deploy lỗi:\n{str(e)}")
+            print(f"❌ Deploy lỗi:\n{str(e)}")
         finally:
             db.session.commit()
             db.session.refresh(deployed_app)  # <--- Quan trọng!
             db.session.expire_all()  # Đảm bảo các query sau sẽ luôn lấy bản mới nhất
+            print(f"App {deployed_app.id} đã được cập nhật trạng thái: {deployed_app.status}")
 
 
 def fill_default_env(form):
