@@ -31,10 +31,8 @@ logger = logging.getLogger("deploy_logger")
 
 
 import logging
-from database_init import (
-    db,
-    Session,
-)  # đảm bảo có Session = scoped_session(sessionmaker(bind=engine))
+from database_init import db
+  # đảm bảo có Session = scoped_session(sessionmaker(bind=engine))
 
 
 def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns_web):
