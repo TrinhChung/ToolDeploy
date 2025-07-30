@@ -73,14 +73,6 @@ fi
 
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
 
-# --- Certbot ---
-if ! dpkg -s certbot python3-certbot-nginx &> /dev/null; then
-  echo "🔒 Cài đặt Certbot + plugin Nginx..."
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx
-else
-  echo "✅ Certbot đã được cài."
-fi
-
 # --- yq ---
 if ! command -v yq &> /dev/null; then
   echo "📝 Cài đặt yq (xử lý YAML)..."
@@ -253,15 +245,30 @@ server {
 }
 EOF
 
+# --- Certbot ---
+if [ -d "/home/certbotEnv" ]; then
+  echo "Folder tồn tại"
+  source /home/certbotEnv/bin/activate
+else
+  python3 -m venv /home/certbotEnv
+  source /home/certbotEnv/bin/activate
+  pip install certbot-nginx
+  pip install certbot
+fi
+echo "✅ Certbot đã được cài."
+
 echo
 echo "Cấu hình certbot"
 if [ -f "$CONFIG_FILE" ]; then
   echo "⚙️ File cấu hình $CONFIG_FILE tồn tại, chạy Certbot..."
-  sudo certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
-  sudo certbot renew
+  sudo /home/certbotEnv/certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
+  sudo /home/certbotEnv/certbot renew
 else
   echo "❌ File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
 fi
+
+deactivate
+echo "✅ Certbot đã kích hoạt"
 
 echo
 echo "chạy docker"
@@ -315,3 +322,4 @@ else
       exit 1
   fi
 fi
+
