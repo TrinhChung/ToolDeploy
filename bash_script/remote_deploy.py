@@ -122,7 +122,7 @@ def run_remote_deploy(
     # 🛠️ Cấp quyền thực thi và chạy file
     now = datetime.now()
     logFile = f"/home/log/{now.strftime('%Y%m%d_%H%M%S')}_{input_dir}.log"
-    cmd = f'touch {logFile} && chmod +x {remote_path} && chmod +x {logFile} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber} >> {logFile}'
+    cmd = f'mkdir -p /home/log && touch {logFile} && chmod +x {remote_path} && chmod +x {logFile} && bash {remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "{appName}" {email} {address} {phoneNumber} {companyName} {taxNumber} >> {logFile}'
     stdin, stdout, stderr = ssh.exec_command(cmd)
 
     exit_status = stdout.channel.recv_exit_status()
