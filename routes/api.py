@@ -186,7 +186,7 @@ def get_first_company():
     if not company:
         return jsonify({"error": "No company found"}), 404
 
-    domain = request.host
+    domain = request.headers.get("Origin")
     print(domain);
     return jsonify(
         {
