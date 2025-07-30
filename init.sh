@@ -1,3 +1,9 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+trap 'echo "❌ Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
+
 INPUT_DIR="$1"
 APP_ID="$2"
 APP_SECRET="$3"
@@ -8,14 +14,17 @@ ADDRESS="$7"
 PHONE_NUMBER="$8"
 COMPANY_NAME="$9"
 TAX_NUMBER="${10}"
-TARGET_DIR="/home/$1"
+TARGET_DIR="/home/$INPUT_DIR"
 
-#!/bin/bash
-
-set -e  # Dừng nếu có lỗi
-set -o pipefail
-
-trap 'echo "❌ Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
+# ---------- Hàm tìm cổng trống ----------
+find_free_port() {
+  local base=${1:-5000}
+  local port=$base
+  while ss -lnt sport = :$port 2>/dev/null | grep -q LISTEN; do
+    port=$((port + 1))
+  done
+  echo "$port"
+}
 
 echo "📦 Cập nhật gói và cài ca-certificates, curl, gnupg, lsb-release..."
 sudo DEBIAN_FRONTEND=noninteractive apt-get update
@@ -29,7 +38,7 @@ else
   echo "✅ Git đã được cài."
 fi
 
-# --- Moreuntils ---
+# --- Moreutils ---
 if ! command -v ts >/dev/null 2>&1; then
   echo "Cài đặt moreutils..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y moreutils
@@ -135,13 +144,26 @@ fi
 
 # --- xử lý port ---
 echo
-echo "Đổi port ứng với số container"
+echo "Chọn cổng cho ứng dụng Flask"
 cd "$TARGET_DIR" || { echo "Thư mục không tồn tại!"; exit 1; }
-count=$(ps aux | grep "flask run" | grep -v grep | wc -l)
-NEW_PORT=$((5000 + count))
+
+PORT_FILE="$TARGET_DIR/port.conf"
+if [[ -f "$PORT_FILE" ]]; then
+  NEW_PORT=$(cat "$PORT_FILE")
+  echo "Đọc lại cổng đã lưu: $NEW_PORT"
+else
+  NEW_PORT=$(find_free_port 5000)
+  echo "$NEW_PORT" > "$PORT_FILE"
+  echo "Lưu cổng $NEW_PORT vào $PORT_FILE"
+fi
+
+if [ -z "$NEW_PORT" ]; then
+  echo "❌ Không tìm được port phù hợp!"
+  exit 1
+fi
 
 echo
-echo "nhập thông tin env"
+echo "Nhập thông tin env"
 cat > "$TARGET_DIR/.env" <<EOF
 ACCESS_TOKEN=
 USER_TOKEN=
@@ -218,22 +240,22 @@ server {
     server_name $DNS_WEB;
 
     location / {
-        if (\$query_string ~* "union.*select.*\(") {
+        if (\$query_string ~* "union.*select.*\\(") {
                 return 403;
         }
         if (\$query_string ~* "select.+from") {
                 return 403;
         }
-        if (\$query_string ~* "insert\s+into") {
+        if (\$query_string ~* "insert\\s+into") {
                 return 403;
         }
-        if (\$query_string ~* "drop\s+table") {
+        if (\$query_string ~* "drop\\s+table") {
                 return 403;
         }
         if (\$query_string ~* "information_schema") {
                 return 403;
         }
-        if (\$query_string ~* "sleep\((\s*)(\d*)(\s*)\)") {
+        if (\$query_string ~* "sleep\\((\\s*)(\\d*)(\\s*)\\)") {
                 return 403;
         }
         proxy_pass http://127.0.0.1:$NEW_PORT;
@@ -271,7 +293,7 @@ deactivate
 echo "✅ Certbot đã kích hoạt"
 
 echo
-echo "chạy docker"
+echo "Chạy docker"
 echo "1 chạy mysql"
 cd /home
 db_container_count=$(docker ps -a --filter "name=mysql_db" --format "{{.Names}}" | wc -l)
@@ -310,9 +332,9 @@ else
     #pip install --upgrade pip
     pip install -r requirements.txt
     flask db upgrade &&
-    nohup bash -c 'stdbuf -oL -eL flask run --host=0.0.0.0 --port=$NEW_PORT 2>&1 | ts "[%Y-%m-%d %H:%M:%S]"' >> flask.log &
+    nohup bash -c "stdbuf -oL -eL flask run --host=0.0.0.0 --port=$NEW_PORT 2>&1 | ts '[%Y-%m-%d %H:%M:%S]'" >> flask.log &
   else
-      echo "Lệnh thất bại"
+    echo "Lệnh thất bại"
   fi
 
   sleep 5
@@ -321,4 +343,3 @@ else
       exit 1
   fi
 fi
-

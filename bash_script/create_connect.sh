@@ -15,6 +15,14 @@ else
   echo "✅ Nginx đã được cài."
 fi
 
+# --- Git ---
+if ! dpkg -s git &> /dev/null; then
+  echo "🧰 Cài đặt Git..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
+elseC
+  echo "✅ Git đã được cài."
+fi
+
 sudo ufw allow 80
 sudo ufw allow 443
 
