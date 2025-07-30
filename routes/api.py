@@ -185,6 +185,9 @@ def get_first_company():
     company = Company.query.first()
     if not company:
         return jsonify({"error": "No company found"}), 404
+
+    domain = request.host
+    print(domain);
     return jsonify(
         {
             "id": company.id,
