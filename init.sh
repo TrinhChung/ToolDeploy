@@ -25,7 +25,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnup
 if ! dpkg -s git &> /dev/null; then
   echo "🧰 Cài đặt Git..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
-elseC
+else
   echo "✅ Git đã được cài."
 fi
 
@@ -289,8 +289,7 @@ while ! ( [ "$(docker ps -a --filter "name=mysql_db" --format "{{.Names}}" | wc 
   sleep 4
 done
 
-app_container_count=$(lsof -i :$NEW_PORT | grep 'flask' | wc -l)
-if [ "$app_container_count" -eq 1 ]; then
+if nc -zv 127.0.0.1 "$NEW_PORT"; then
   echo "Đã có app chạy ở cổng này"
   exit 1
 else
