@@ -79,7 +79,7 @@ certbot --version || echo "Certbot ❌"
 
 echo
 echo "Tạo file cấu hình nginx"
-CONFIG_FILE="/etc/nginx/sites-available/$DNS_WEB"
+CONFIG_FILE="/etc/nginx/sites-enabled/$DNS_WEB"
 cat > "$CONFIG_FILE" <<EOF
 server {
     server_name $DNS_WEB;
@@ -100,7 +100,6 @@ server {
 }
 EOF
 
-ln -sf "$CONFIG_FILE" "/etc/nginx/sites-enabled/$DNS_WEB"
 sudo nginx -t && sudo systemctl reload nginx
 
 echo
