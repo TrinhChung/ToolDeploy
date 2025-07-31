@@ -6,6 +6,7 @@ from models.user_fe import UserFE
 from models.order import Order
 from models.order_item import OrderItem
 from models.company import Company
+from models.website import Website
 
 api_bp = Blueprint('api_fe', __name__, url_prefix='/api')
 
@@ -180,14 +181,31 @@ def order_detail(order_id):
 
 
 @api_bp.route("/company", methods=["GET"])
-def get_first_company():
-    """Trả về thông tin công ty đầu tiên (dump cho frontend)."""
-    company = Company.query.first()
+def get_company_by_origin():
+    """Trả về thông tin công ty dựa trên Origin domain (frontend)."""
+    origin = request.headers.get("Origin")
+    domain_name = None
+
+    if origin:
+        try:
+            domain_name = origin.split("//", 1)[-1].split("/")[0].split(":")[0]
+        except Exception:
+            domain_name = None
+
+    company = None
+
+    if domain_name:
+        # Tìm website theo static_page_link
+        website = Website.query.filter_by(static_page_link=domain_name).first()
+        if website:
+            company = Company.query.get(website.company_id)
+
+    if not company:
+        company = Company.query.first()
+
     if not company:
         return jsonify({"error": "No company found"}), 404
 
-    domain = request.headers.get("Origin")
-    print(domain);
     return jsonify(
         {
             "id": company.id,
