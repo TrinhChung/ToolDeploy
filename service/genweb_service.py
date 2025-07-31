@@ -43,7 +43,7 @@ def create_company_from_form(form, logo_url, user_id):
 def create_website_from_form(form, company_id, user_id):
     website = Website(
         company_id=company_id,
-        dns_record_id=form.get("dns_record_id"),
+        domain_id=form.get("domain_id"),
         template_id=form.get("template_id"),
         static_page_link=form.get("static_page_link", ""),
         note=form.get("website_note", ""),

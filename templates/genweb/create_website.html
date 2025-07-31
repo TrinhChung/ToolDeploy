@@ -98,7 +98,7 @@
 
 <div class="mb-3">
     <label class="form-label">Domain</label>
-    <select name="dns_record_id" required class="form-select" id="domainSelect">
+    <select name="domain_id" required class="form-select" id="domainSelect">
         {% if dns_records %}
         {% for d in dns_records %}
         <option value="{{ d.id }}" {% if loop.first %}selected{% endif %}>

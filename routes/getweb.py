@@ -27,9 +27,9 @@ def create_website():
     if request.method == "POST":
         user_id = getattr(current_user, "id", None)
         subdomain = request.form.get("subdomain", "").strip()
-        dns_record_id = request.form.get("dns_record_id")
+        domain_id = request.form.get("domain_id")
         server_id = request.form.get("server_id")
-        domain = Domain.query.get(dns_record_id)
+        domain = Domain.query.get(domain_id)
         server = Server.query.get(server_id)
 
         if not domain or not server:
@@ -60,7 +60,7 @@ def create_website():
 
         flash("✅ Website và công ty đã được tạo thành công!", "success")
         logger.info(
-            f"Website created: company_id={company.id}, server_id={server_id}, domain_id={dns_record_id}, template_id={request.form.get('template_id')}"
+            f"Website created: company_id={company.id}, server_id={server_id}, domain_id={domain_id}, template_id={request.form.get('template_id')}"
         )
         return redirect(url_for("genweb.list_website"))
 
