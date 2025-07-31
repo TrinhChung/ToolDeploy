@@ -332,6 +332,8 @@ else
     pip install -r requirements.txt
     flask db upgrade &&
     nohup bash -c "stdbuf -oL -eL flask run --host=0.0.0.0 --port=$NEW_PORT 2>&1 | ts '[%Y-%m-%d %H:%M:%S]'" >> flask.log &
+    echo "✅ Flask started trên port $NEW_PORT"
+    exit 0
   else
     echo "Lệnh thất bại"
   fi
