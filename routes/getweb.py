@@ -7,6 +7,8 @@ from models.website import Website
 from models.domain import Domain
 from models.template import Template
 from models.server import Server
+import os
+import random
 from util.dns_helper import (
     create_dns_record_if_needed,
 )  # <-- Import helper DNS đã chuẩn hoá
@@ -39,6 +41,14 @@ def create_website():
         static_page_link = request.form.get("static_page_link", "")
         website_note = request.form.get("website_note", "")
         subdomain = request.form.get("subdomain", "").strip()  # <-- cần cho DNS
+        
+        # --- Random logo SVG (nếu chưa upload từ form) ---
+        logo_dir = os.path.join(os.getcwd(), 'static', 'images', 'logo')
+        logo_files = [f for f in os.listdir(logo_dir) if f.lower().endswith('.svg')]
+        logo_url = request.form.get("logo_url", "")
+        if not logo_url and logo_files:
+            random_logo = random.choice(logo_files)
+            logo_url = f"/static/images/logo/{random_logo}"
 
         # --- Check thông tin domain/server ---
         domain = Domain.query.get(dns_record_id)
