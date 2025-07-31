@@ -1,4 +1,5 @@
 """
+/bash_script/remote_deploy.py
 remote_deploy.py  ―  Tiện ích SSH cho quá trình deploy / bật-tắt Flask app
 ────────────────────────────────────────────────────────────────────────────
 ✓ Copy & chạy init.sh, stream log không nghẽn

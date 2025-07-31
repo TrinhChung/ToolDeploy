@@ -1,11 +1,9 @@
 DNS_WEB="$1"
-BACKEND_URL="$2"
+PORT="$2"
 
 #!/bin/bash
-
-set -e  # Dừng nếu có lỗi
+set -e
 set -o pipefail
-
 trap 'echo "❌ Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
 
 # --- Nginx ---
@@ -20,7 +18,7 @@ fi
 if ! dpkg -s git &> /dev/null; then
   echo "🧰 Cài đặt Git..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
-elseC
+else
   echo "✅ Git đã được cài."
 fi
 
@@ -81,30 +79,18 @@ certbot --version || echo "Certbot ❌"
 
 echo
 echo "Tạo file cấu hình nginx"
-CONFIG_FILE="/etc/nginx/sites-enabled/$DNS_WEB"
+CONFIG_FILE="/etc/nginx/sites-available/$DNS_WEB"
 cat > "$CONFIG_FILE" <<EOF
 server {
     server_name $DNS_WEB;
 
     location / {
-        if (\$query_string ~* "union.*select.*\(") {
-                return 403;
-        }
-        if (\$query_string ~* "select.+from") {
-                return 403;
-        }
-        if (\$query_string ~* "insert\s+into") {
-                return 403;
-        }
-        if (\$query_string ~* "drop\s+table") {
-                return 403;
-        }
-        if (\$query_string ~* "information_schema") {
-                return 403;
-        }
-        if (\$query_string ~* "sleep\((\s*)(\d*)(\s*)\)") {
-                return 403;
-        }
+        if (\$query_string ~* "union.*select.*\\(") { return 403; }
+        if (\$query_string ~* "select.+from") { return 403; }
+        if (\$query_string ~* "insert\\s+into") { return 403; }
+        if (\$query_string ~* "drop\\s+table") { return 403; }
+        if (\$query_string ~* "information_schema") { return 403; }
+        if (\$query_string ~* "sleep\\((\\s*)(\\d*)(\\s*)\\)") { return 403; }
         proxy_pass http://127.0.0.1:$PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -113,6 +99,9 @@ server {
     }
 }
 EOF
+
+ln -sf "$CONFIG_FILE" "/etc/nginx/sites-enabled/$DNS_WEB"
+sudo nginx -t && sudo systemctl reload nginx
 
 echo
 echo "Cấu hình certbot"
