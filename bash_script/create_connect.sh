@@ -1,5 +1,6 @@
-PORT="$1"
-DNS_WEB="$2"
+DNS_WEB="$1"
+BACKEND_URL="$2"
+
 #!/bin/bash
 
 set -e  # Dừng nếu có lỗi
@@ -34,13 +35,42 @@ else
   echo "✅ Python3 đã được cài."
 fi
 
-# --- Certbot ---
-if ! dpkg -s certbot python3-certbot-nginx &> /dev/null; then
-  echo "🔒 Cài đặt Certbot + plugin Nginx..."
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx
+# --- Pip ---
+if ! command -v pip3 &> /dev/null; then
+  echo "🐍 Cài đặt PIP..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
 else
-  echo "✅ Certbot đã được cài."
+  echo "✅ PIP đã được cài."
 fi
+
+if ! dpkg -s python3-venv &> /dev/null; then
+  echo "🐍 Cài đặt Virtual env..."
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-venv
+else
+  echo "✅ Virtual env đã được cài."
+fi
+
+# --- Node.js 18 ---
+if ! command -v node &>/dev/null || [[ "$(node -v)" != v18* ]]; then
+  echo "🟩 Đang cài đặt Node.js 18.x..."
+  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+else
+  echo "✅ Node.js $(node -v) đã được cài."
+fi
+
+# --- Certbot cài trong myenv ---
+if [ -d "/home/myenv" ]; then
+  echo "Virtual env đã tồn tại: /home/myenv"
+else
+  python3 -m venv /home/myenv
+  echo "Tạo folder virtual env /home/myenv thành công"
+fi
+
+source /home/myenv/bin/activate
+pip show certbot &>/dev/null || pip install certbot
+pip show certbot-nginx &>/dev/null || pip install certbot-nginx
+echo "✅ Certbot và certbot-nginx đã được cài trong myenv."
 
 # --- Kiểm tra ---
 echo
@@ -88,9 +118,11 @@ echo
 echo "Cấu hình certbot"
 if [ -f "$CONFIG_FILE" ]; then
   echo "⚙️ File cấu hình $CONFIG_FILE tồn tại, chạy Certbot..."
-  sudo certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
-  sudo certbot renew
-	echo "🚀 Cấu hình đã được triển khai."
+  certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
+  certbot renew
 else
   echo "❌ File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
 fi
+
+deactivate
+echo "✅ Certbot đã kích hoạt"

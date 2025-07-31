@@ -112,6 +112,20 @@
 									<i class="fa fa-plus me-1"></i> Deploy App mới
 								</a>
 							</li>
+							<!-- ==== Thêm GenWeb tại đây ==== -->
+							<li>
+								<hr class="dropdown-divider">
+							</li>
+							<li>
+								<a class="dropdown-item" href="{{ url_for('genweb.list_website') }}">
+									<i class="fa fa-globe me-1"></i> Danh sách Website GenWeb
+								</a>
+							</li>
+							<li>
+								<a class="dropdown-item" href="{{ url_for('genweb.create_website') }}">
+									<i class="fa fa-plus me-1"></i> Tạo Website mới (GenWeb)
+								</a>
+							</li>
 							{% endif %}
 						</ul>
 					</li>
