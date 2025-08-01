@@ -183,14 +183,9 @@ def order_detail(order_id):
 @api_bp.route("/company", methods=["GET"])
 def get_company_by_origin():
     """Trả về thông tin công ty dựa trên Origin domain (frontend)."""
-    origin = request.headers.get("Origin")
-    domain_name = None
-
-    if origin:
-        try:
-            domain_name = origin.split("//", 1)[-1].split("/")[0].split(":")[0]
-        except Exception:
-            domain_name = None
+    origin = request.headers.get("X-Client-Domain")
+    print("Frontend Domain:", origin)
+    domain_name = origin or None
 
     company = None
 
