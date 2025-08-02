@@ -12,7 +12,7 @@
         </div>
         <div id="rawInputArea" style="display: none;">
             <label class="form-label">Dán thông tin khách hàng</label>
-            <textarea class="form-control mb-2" id="rawInput" rows="5"
+            <textarea class="form-control mb-2" id="rawInput" rows="8"
                 placeholder="Dán đoạn text như khách gửi vào đây..."></textarea>
             <button type="button" class="btn btn-sm btn-secondary" onclick="normalizeCustomerText()">Chuẩn hóa & điền
                 vào form</button>
@@ -26,7 +26,8 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Địa chỉ</label>
-            <input name="address" required class="form-control">
+            <!-- Sửa input thành textarea -->
+            <textarea name="address" required class="form-control" rows="3"></textarea>
         </div>
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -86,7 +87,8 @@
             <select name="server_id" required class="form-select">
                 {% if servers %}
                 {% for s in servers %}
-                <option value="{{ s.id }}" {% if loop.first %}selected{% endif %}>
+                <option value="{{ s.id }}" {% if "web_product" in s.name|lower %}selected
+                    {% elif loop.first and not servers|selectattr('name','contains','Web_Product')|list %}selected{% endif %}>
                     {{ s.name }} ({{ s.ip }})
                 </option>
                 {% endfor %}
@@ -95,12 +97,14 @@
                 {% endif %}
             </select>
         </div>
+
         <div class="mb-3">
             <label class="form-label">Domain</label>
             <select name="domain_id" required class="form-select" id="domainSelect">
                 {% if dns_records %}
                 {% for d in dns_records %}
-                <option value="{{ d.id }}" {% if loop.first %}selected{% endif %}>
+                <option value="{{ d.id }}" {% if d.name == "asenanen2.com" %}selected
+                    {% elif loop.first and not dns_records|selectattr('name','equalto','asenanen2.com')|list %}selected{% endif %}>
                     {{ d.name }}
                 </option>
                 {% endfor %}
@@ -165,97 +169,104 @@
     });
 
     function normalizeCustomerText() {
-            const text = document.getElementById('rawInput').value;
-            const errorDiv = document.getElementById('normalizeError');
-            errorDiv.innerText = "";
+        const text = document.getElementById('rawInput').value;
+        const errorDiv = document.getElementById('normalizeError');
+        errorDiv.innerText = "";
 
-            if (!text.trim()) {
-                errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
-                return;
-            }
-
-            let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-            let company_name = '';
-            let address = '';
-            let hotline = '';
-            let license_no = '';
-            let description = '';
-            let email = '';
-            let subdomain = '';
-
-            let full_text = lines.join('\n');
-
-            // 1. Company name = dòng đầu tiên
-            if (lines.length) {
-                company_name = lines[0].trim();
-            }
-
-            // 2. Lấy hotline: dòng nào có 8-20 chữ số
-            for (let l of lines) {
-                let phone = l.replace(/\D/g, '');
-                if (phone.length >= 8 && phone.length <= 20) {
-                    hotline = l.match(/[\d\-\+\(\)\s]+/g)?.join('').trim() || '';
-                    break;
-                }
-            }
-
-            // 3. License/MST
-            let lic = full_text.match(/(License|Organization)[^\d]*[:：]?\s*([\w\-]+)/i);
-            license_no = lic ? lic[2] : '';
-
-            // 4. Địa chỉ (lấy các dòng bắt đầu từ "Full Address" đến khi hết dòng hoặc gặp hotline)
-            let addrStart = lines.findIndex(l => /Full Address/i.test(l));
-            if (addrStart !== -1) {
-                let addrArr = [];
-                for (let i = addrStart + 1; i < lines.length; i++) {
-                    let line = lines[i];
-                    // Dừng lại nếu gặp dòng là số điện thoại hoặc dòng trống
-                    if (line.replace(/\D/g, '').length >= 8 && line.replace(/\D/g, '').length <= 20) break;
-                    if (!line.trim()) break;
-                    addrArr.push(line);
-                }
-                address = addrArr.join('\n'); // Giữ nguyên dạng xuống dòng
-            }
-
-            // 5. Email: info@subdomain.domain
-            // subdomain: tạo từ company_name (remove space, ký tự đặc biệt)
-            let rawSubdomain = company_name ? company_name.replace(/[^\w]/g, '').toLowerCase() : '';
-            // Lấy domain đang chọn ở dropdown
-            let domainText = getSelectedDomainText();
-            let autoEmail = (rawSubdomain && domainText) ? `info@${rawSubdomain}.${domainText}` : '';
-
-            // 6. Description/auto fields
-            let autoDesc = company_name
-                ? `${company_name} is a company operating in the fashion industry, providing high-quality products and reliable services to customers.`
-                : '';
-            let autoFooter = company_name
-                ? `© ${company_name} - Your trusted fashion brand.`
-                : '';
-
-            // Footer text
-            let footerText = '';
-            let footerMatch = full_text.match(/footer[:：]?\s*(.*)/i);
-            if (footerMatch && footerMatch[1]) {
-                footerText = footerMatch[1].trim();
-            }
-
-            // Subdomain (giống phần email)
-            let autoSubdomain = rawSubdomain;
-
-            document.querySelector('input[name="company_name"]').value = company_name;
-            document.querySelector('input[name="address"]').value = address;
-            document.querySelector('input[name="hotline"]').value = hotline;
-            document.querySelector('input[name="license_no"]').value = license_no;
-            document.querySelector('input[name="description"]').value = autoDesc;
-            document.querySelector('input[name="email"]').value = autoEmail;
-            document.querySelector('input[name="subdomain"]').value = autoSubdomain;
-            document.querySelector('input[name="footer_text"]').value = footerText || autoFooter;
-
-            // Link tĩnh auto (sau khi điền subdomain + domain)
-            let staticPageLink = (autoSubdomain && domainText) ? `${autoSubdomain}.${domainText}` : '';
-            document.getElementById('staticPageLink').value = staticPageLink;
+        if (!text.trim()) {
+            errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
+            return;
         }
+
+        let lines = text.split('\n').map(l => l.trimEnd()).filter(Boolean);
+
+        let company_name = '';
+        let address = '';
+        let hotline = '';
+        let license_no = '';
+        let description = '';
+        let email = '';
+        let subdomain = '';
+
+        let full_text = lines.join('\n');
+
+        // 1. Company name = dòng đầu tiên
+        if (lines.length) {
+            company_name = lines[0].trim();
+        }
+
+        // 2. Lấy hotline: dòng cuối cùng khớp pattern phone Mỹ
+        let phoneRegex = /(\d{3}[-\s]?\d{3,4}[-\s]?\d{4})/;
+        let hotlineIndex = -1;
+        for (let i = lines.length - 1; i >= 0; i--) {
+            let l = lines[i].trim();
+            if (/^\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}$/.test(l)) continue;
+            if (phoneRegex.test(l)) {
+                hotline = l.match(phoneRegex)[0];
+                hotlineIndex = i;
+                break;
+            }
+        }
+
+        // 3. License/MST
+        let lic = full_text.match(/(License|Organization)[^\d]*[:：]?\s*([\w\-]+)/i);
+        license_no = lic ? lic[2] : '';
+
+        // 4. Địa chỉ (từ Full Address đến ngay trước hotline, giữ nguyên từng dòng)
+        let addrStart = lines.findIndex(l => /Full Address/i.test(l));
+        let addrArr = [];
+        if (addrStart !== -1) {
+            // Lấy phần sau dấu ":" nếu có
+            const fullAddrLine = lines[addrStart];
+            const colonIdx = fullAddrLine.indexOf(':');
+            if (colonIdx !== -1 && colonIdx < fullAddrLine.length - 1) {
+                let afterColon = fullAddrLine.slice(colonIdx + 1).trim();
+                if (afterColon) addrArr.push(afterColon);
+            }
+            // Các dòng tiếp theo cho đến trước hotline
+            for (let i = addrStart + 1; i < lines.length; i++) {
+                if (i === hotlineIndex) break;
+                addrArr.push(lines[i]);
+            }
+            address = addrArr.join('\n');
+        }
+
+        // 5. Email: info@subdomain.domain
+        let rawSubdomain = company_name ? company_name.replace(/[^\w]/g, '').toLowerCase() : '';
+        let domainText = getSelectedDomainText();
+        let autoEmail = (rawSubdomain && domainText) ? `info@${rawSubdomain}.${domainText}` : '';
+
+        // 6. Description/auto fields
+        let autoDesc = company_name
+            ? `${company_name} is a company operating in the fashion industry, providing high-quality products and reliable services to customers.`
+            : '';
+        let autoFooter = company_name
+            ? `© ${company_name} - Your trusted fashion brand.`
+            : '';
+
+        // Footer text
+        let footerText = '';
+        let footerMatch = full_text.match(/footer[:：]?\s*(.*)/i);
+        if (footerMatch && footerMatch[1]) {
+            footerText = footerMatch[1].trim();
+        }
+
+        // Subdomain (giống phần email)
+        let autoSubdomain = rawSubdomain;
+
+        document.querySelector('input[name="company_name"]').value = company_name;
+        document.querySelector('textarea[name="address"]').value = address;
+        document.querySelector('input[name="hotline"]').value = hotline;
+        document.querySelector('input[name="license_no"]').value = license_no;
+        document.querySelector('input[name="description"]').value = autoDesc;
+        document.querySelector('input[name="email"]').value = autoEmail;
+        document.querySelector('input[name="subdomain"]').value = autoSubdomain;
+        document.querySelector('input[name="footer_text"]').value = footerText || autoFooter;
+
+        // Link tĩnh auto (sau khi điền subdomain + domain)
+        let staticPageLink = (autoSubdomain && domainText) ? `${autoSubdomain}.${domainText}` : '';
+        document.getElementById('staticPageLink').value = staticPageLink;
+    }
 
     // Validate các trường bắt buộc trước khi submit
     document.getElementById('companyForm').addEventListener('submit', function (e) {
@@ -302,7 +313,7 @@
 
     // Render Google Map preview khi địa chỉ thay đổi
     function updateGoogleMapEmbed() {
-        const addressInput = document.querySelector('input[name="address"]');
+        const addressInput = document.querySelector('textarea[name="address"]');
         const embedInput = document.querySelector('input[name="google_map_embed"]');
         const mapPreview = document.getElementById('mapEmbedPreview');
         if (!addressInput || !embedInput || !mapPreview) return;
@@ -335,7 +346,7 @@
             mapEmbedRow.appendChild(mapPreviewDiv);
         }
         // Update mỗi khi thay đổi địa chỉ
-        document.querySelector('input[name="address"]').addEventListener('input', updateGoogleMapEmbed);
+        document.querySelector('textarea[name="address"]').addEventListener('input', updateGoogleMapEmbed);
         // Khi điền auto từ normalize cũng gọi lại
         const oldNormalize = window.normalizeCustomerText;
         window.normalizeCustomerText = function () {

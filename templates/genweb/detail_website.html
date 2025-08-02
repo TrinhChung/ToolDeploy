@@ -14,7 +14,7 @@
 					<input name="company_name" class="form-control" value="{{ w.company_name|default('') }}">
 				</div>
 				<div class="mb-2"><b>Địa chỉ:</b>
-					<input name="address" class="form-control" value="{{ w.address|default('') }}">
+					<textarea name="address" class="form-control" rows="3">{{ w.address|default('') }}</textarea>
 				</div>
 				<div class="mb-2"><b>Hotline:</b>
 					<input name="hotline" class="form-control" value="{{ w.hotline|default('') }}">
