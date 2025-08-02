@@ -26,7 +26,6 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Địa chỉ</label>
-            <!-- Sửa input thành textarea -->
             <textarea name="address" required class="form-control" rows="3"></textarea>
         </div>
         <div class="row">
@@ -82,35 +81,42 @@
         </div>
         <hr class="my-4">
         <h5 class="mb-3 mt-4">Thông tin website</h5>
+
+        {# --- SERVER PRIORITY: chọn web_product nếu có --- #}
+        {% set has_web_product = false %}
+        {% for s in servers %}
+        {% if 'web_product' in s.name|lower %}
+        {% set has_web_product = true %}
+        {% endif %}
+        {% endfor %}
         <div class="mb-3">
             <label class="form-label">Server</label>
             <select name="server_id" required class="form-select">
-                {% if servers %}
                 {% for s in servers %}
-                <option value="{{ s.id }}" {% if "web_product" in s.name|lower %}selected
-                    {% elif loop.first and not servers|selectattr('name','contains','Web_Product')|list %}selected{% endif %}>
+                <option value="{{ s.id }}"
+                    {% if 'web_product' in s.name|lower %}selected{% elif loop.first and not has_web_product %}selected{% endif %}>
                     {{ s.name }} ({{ s.ip }})
                 </option>
                 {% endfor %}
-                {% else %}
-                <option value="">-- Không có server --</option>
-                {% endif %}
             </select>
         </div>
 
+        {# --- DOMAIN PRIORITY: chọn asenanen2.com nếu có --- #}
+        {% set has_asenanen2 = false %}
+        {% for d in dns_records %}
+        {% if d.name == "asenanen2.com" %}
+        {% set has_asenanen2 = true %}
+        {% endif %}
+        {% endfor %}
         <div class="mb-3">
             <label class="form-label">Domain</label>
             <select name="domain_id" required class="form-select" id="domainSelect">
-                {% if dns_records %}
                 {% for d in dns_records %}
-                <option value="{{ d.id }}" {% if d.name == "asenanen2.com" %}selected
-                    {% elif loop.first and not dns_records|selectattr('name','equalto','asenanen2.com')|list %}selected{% endif %}>
+                <option value="{{ d.id }}"
+                    {% if d.name == "asenanen2.com" %}selected{% elif loop.first and not has_asenanen2 %}selected{% endif %}>
                     {{ d.name }}
                 </option>
                 {% endfor %}
-                {% else %}
-                <option value="">-- Không có domain --</option>
-                {% endif %}
             </select>
         </div>
         <div class="mb-3">
@@ -216,7 +222,7 @@
         let addrStart = lines.findIndex(l => /Full Address/i.test(l));
         let addrArr = [];
         if (addrStart !== -1) {
-            // Lấy phần sau dấu ":" nếu có
+            // Nếu có dấu : thì tách phần sau dấu :
             const fullAddrLine = lines[addrStart];
             const colonIdx = fullAddrLine.indexOf(':');
             if (colonIdx !== -1 && colonIdx < fullAddrLine.length - 1) {
