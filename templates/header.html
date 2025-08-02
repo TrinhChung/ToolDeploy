@@ -102,6 +102,7 @@
 							<li>
 								<hr class="dropdown-divider">
 							</li>
+							{% endif %}
 							<li>
 								<a class="dropdown-item" href="{{ url_for('deployed_app.list_app') }}">
 									<i class="fa fa-th-list me-1"></i> Danh sách App Đã Deploy
@@ -126,7 +127,7 @@
 									<i class="fa fa-plus me-1"></i> Tạo Website mới (GenWeb)
 								</a>
 							</li>
-							{% endif %}
+							
 						</ul>
 					</li>
 

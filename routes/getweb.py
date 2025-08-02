@@ -91,6 +91,7 @@ def list_website():
 def view_website(website_id):
     if request.method == "POST":
         # Lấy dữ liệu form
+        company_name = request.form.get("company_name", "").strip()
         address = request.form.get("address", "").strip()
         hotline = request.form.get("hotline", "").strip()
         email = request.form.get("email", "").strip()
@@ -103,6 +104,7 @@ def view_website(website_id):
 
         company = Company.query.get(website.company_id)
         if company:
+            company.name = company_name  # <-- cập nhật tên công ty
             company.address = address
             company.hotline = hotline
             company.email = email

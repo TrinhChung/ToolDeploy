@@ -10,6 +10,9 @@
 			<h4 class="card-title mb-3">{{ w.company_name }}</h4>
 			<form method="POST">
 				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+				<div class="mb-2"><b>Tên công ty:</b>
+					<input name="company_name" class="form-control" value="{{ w.company_name|default('') }}">
+				</div>
 				<div class="mb-2"><b>Địa chỉ:</b>
 					<input name="address" class="form-control" value="{{ w.address|default('') }}">
 				</div>
