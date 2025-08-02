@@ -6,6 +6,9 @@ from models.domain import Domain
 from models.template import Template
 from models.server import Server
 from util.dns_helper import create_dns_record_if_needed
+from models.website import Website
+from models.company import Company
+
 from service.genweb_service import (
     get_random_logo_url,
     create_company_from_form,
@@ -83,11 +86,37 @@ def list_website():
     return render_template("genweb/list_website.html", websites=websites)
 
 
-@genweb_bp.route("/detail/<int:website_id>")
+@genweb_bp.route("/detail/<int:website_id>", methods=["GET", "POST"])
 @login_required
 def view_website(website_id):
+    if request.method == "POST":
+        # Lấy dữ liệu form
+        address = request.form.get("address", "").strip()
+        hotline = request.form.get("hotline", "").strip()
+        email = request.form.get("email", "").strip()
+        google_map_embed = request.form.get("google_map_embed", "").strip()
+
+        website = Website.query.get(website_id)
+        if not website:
+            flash("Không tìm thấy website!", "danger")
+            return redirect(url_for("genweb.list_website"))
+
+        company = Company.query.get(website.company_id)
+        if company:
+            company.address = address
+            company.hotline = hotline
+            company.email = email
+            company.google_map_embed = google_map_embed
+            db.session.commit()
+            flash("Đã cập nhật thông tin công ty!", "success")
+        else:
+            flash("Không tìm thấy thông tin công ty!", "danger")
+
+        return redirect(url_for("genweb.view_website", website_id=website_id))
+
     w = get_website_detail(website_id)
     if not w:
         flash("Website không tồn tại!", "danger")
         return redirect(url_for("genweb.list_website"))
+
     return render_template("genweb/detail_website.html", w=w)

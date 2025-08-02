@@ -52,7 +52,7 @@ def setup_logging():
         app_logger.addHandler(file_handler_main)
 
     # Đảm bảo Flask không tự động double-log (nếu dùng Flask >2.3)
-    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.INFO)
 
 
 # --- Chạy hàm này 1 lần ở entrypoint (app.py/main.py) ---

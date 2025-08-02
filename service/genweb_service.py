@@ -91,7 +91,7 @@ def get_website_detail(website_id):
             Server.ip.label("server_ip"),
         )
         .join(Company, Website.company_id == Company.id)
-        .join(Domain, Website.dns_record_id == Domain.id)
+        .join(Domain, Website.domain_id == Domain.id)  # ĐÃ SỬA Ở ĐÂY
         .join(Template, Website.template_id == Template.id)
         .join(Server, Website.server_id == Server.id)
         .filter(Website.id == website_id)

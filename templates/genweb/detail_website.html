@@ -8,9 +8,26 @@
 	<div class="card" style="max-width:700px">
 		<div class="card-body">
 			<h4 class="card-title mb-3">{{ w.company_name }}</h4>
-			<div class="mb-2"><b>Địa chỉ:</b> {{ w.address }}</div>
-			<div class="mb-2"><b>Hotline:</b> {{ w.hotline }}</div>
-			<div class="mb-2"><b>Email:</b> {{ w.email }}</div>
+			<form method="POST">
+				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+				<div class="mb-2"><b>Địa chỉ:</b>
+					<input name="address" class="form-control" value="{{ w.address|default('') }}">
+				</div>
+				<div class="mb-2"><b>Hotline:</b>
+					<input name="hotline" class="form-control" value="{{ w.hotline|default('') }}">
+				</div>
+				<div class="mb-2"><b>Email:</b>
+					<input name="email" class="form-control" value="{{ w.email|default('') }}">
+				</div>
+				<div class="mb-2"><b>Google Map Embed:</b>
+					<input name="google_map_embed" class="form-control" value="{{ w.google_map_embed|default('') }}">
+					<div class="form-text">
+						Dán <code>src=""</code> của iframe Google Map hoặc nhập địa chỉ, hệ thống sẽ tự tạo link embed nếu để trống.
+					</div>
+				</div>
+				<button class="btn btn-primary btn-sm" type="submit"><i class="fa fa-save"></i> Lưu cập nhật</button>
+			</form>
+			<hr>
 			<div class="mb-2"><b>Mã số thuế:</b> {{ w.license_no }}</div>
 			<div class="mb-2"><b>Server:</b> {{ w.server_name }} ({{ w.server_ip }})</div>
 			<div class="mb-2"><b>Domain:</b> {{ w.domain_name }}</div>
