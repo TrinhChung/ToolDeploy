@@ -42,7 +42,27 @@
 			</div>
 			<div class="mb-2"><b>Mô tả:</b> {{ w.description }}</div>
 			<div class="mb-2"><b>Footer:</b> {{ w.footer_text }}</div>
-			<div class="mb-2"><b>Ghi chú:</b> {{ w.note }}</div>
+			{# Ghi chú chỉ hiển thị cho admin #}
+			{% if current_user.is_authenticated and current_user.is_admin %}
+			<div class="mb-3">
+				<b>Ghi chú (log):</b>
+				<pre style="
+			    background: #212529;
+			    color: #04e762;
+			    padding: 12px 16px;
+			    border-radius: 8px;
+			    font-size: 14px;
+			    font-family: 'Fira Mono', 'Consolas', monospace;
+			    white-space: pre-wrap;
+			    word-break: break-all;
+			    max-height: 350px;
+			    overflow: auto;
+			    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+			    margin-top:8px;
+			  ">{{ w.note|default('Chưa có ghi chú') }}</pre>
+			</div>
+			{% endif %}
+
 			{% if w.google_map_embed %}
 			<div class="mt-3">
 				<b>Bản đồ Google Map:</b>
