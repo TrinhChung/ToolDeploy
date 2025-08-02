@@ -81,7 +81,7 @@
         </div>
         <hr class="my-4">
         <h5 class="mb-3 mt-4">Thông tin website</h5>
-        <<div class="mb-3">
+        <div class="mb-3">
             <label class="form-label">Server</label>
             <select name="server_id" required class="form-select">
                 {% if servers %}
@@ -94,82 +94,51 @@
                 <option value="">-- Không có server --</option>
                 {% endif %}
             </select>
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Domain</label>
-    <select name="domain_id" required class="form-select" id="domainSelect">
-        {% if dns_records %}
-        {% for d in dns_records %}
-        <option value="{{ d.id }}" {% if loop.first %}selected{% endif %}>
-            {{ d.name }}
-        </option>
-        {% endfor %}
-        {% else %}
-        <option value="">-- Không có domain --</option>
-        {% endif %}
-    </select>
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Template</label>
-    <select name="template_id" required class="form-select">
-        {% if templates %}
-        {% for t in templates %}
-        <option value="{{ t.id }}" {% if loop.first %}selected{% endif %}>
-            {{ t.name }}
-        </option>
-        {% endfor %}
-        {% else %}
-        <option value="">-- Không có template --</option>
-        {% endif %}
-    </select>
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Link tĩnh</label>
-    <input name="static_page_link" class="form-control" id="staticPageLink" readonly>
-</div>
-<div class="mb-3">
-    <label class="form-label">Ghi chú website</label>
-    <textarea name="website_note" class="form-control" rows="2"></textarea>
-</div>
-<div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Tạo website</button>
-    <a href="{{ url_for('genweb.list_website') }}" class="btn btn-outline-secondary">Huỷ</a>
-</div>
-</form>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Domain</label>
+            <select name="domain_id" required class="form-select" id="domainSelect">
+                {% if dns_records %}
+                {% for d in dns_records %}
+                <option value="{{ d.id }}" {% if loop.first %}selected{% endif %}>
+                    {{ d.name }}
+                </option>
+                {% endfor %}
+                {% else %}
+                <option value="">-- Không có domain --</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Template</label>
+            <select name="template_id" required class="form-select">
+                {% if templates %}
+                {% for t in templates %}
+                <option value="{{ t.id }}" {% if loop.first %}selected{% endif %}>
+                    {{ t.name }}
+                </option>
+                {% endfor %}
+                {% else %}
+                <option value="">-- Không có template --</option>
+                {% endif %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Link tĩnh</label>
+            <input name="static_page_link" class="form-control" id="staticPageLink" readonly>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ghi chú website</label>
+            <textarea name="website_note" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Tạo website</button>
+            <a href="{{ url_for('genweb.list_website') }}" class="btn btn-outline-secondary">Huỷ</a>
+        </div>
+    </form>
 </div>
 
 <script>
-    // Remove Vietnamese tones
-    function removeVietnameseTones(str) {
-        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
-    }
-
-    // Clean and get string for email/subdomain (bỏ stopword, không dấu, không space)
-    function cleanForEmailAndSubdomain(name) {
-        const stopwords = ["llc", "jsc", "co", "ltd", "inc", "company", "corp", "corporation", "plc", "limited", "joint", "stock"];
-        let tokens = name.split(' ').filter(word => !stopwords.includes(word.toLowerCase()));
-        let cleaned = removeVietnameseTones(tokens.join(' '));
-        return cleaned;
-    }
-
-    function makeEmail(companyName) {
-        let s = cleanForEmailAndSubdomain(companyName);
-        s = s.replace(/[^\w\s]/g, '');
-        s = s.replace(/\s+/g, '').toLowerCase();
-        return s ? (s + '@gmail.com') : '';
-    }
-
-    function makeSubdomain(companyName) {
-        let s = cleanForEmailAndSubdomain(companyName);
-        s = s.replace(/[^\w\s-]/g, '');
-        s = s.replace(/\s+/g, '').toLowerCase();
-        s = s.replace(/-+/g, '').replace(/^-|-$/g, '');
-        return s;
-    }
-
     // Lấy text domain đã chọn (không phải value id)
     function getSelectedDomainText() {
         const domainSelect = document.getElementById('domainSelect');
@@ -185,124 +154,108 @@
         document.getElementById('staticPageLink').value = (sub && domainText) ? `${sub}.${domainText}` : '';
     }
 
-    // Gán sự kiện onchange cho input và select
     document.addEventListener('DOMContentLoaded', function () {
-            document.querySelector('input[name="subdomain"]').addEventListener('input', updateStaticPageLink);
-            document.getElementById('domainSelect').addEventListener('change', updateStaticPageLink);
-            // --- GỌI NGAY LÚC LOAD TRANG ---
-            updateStaticPageLink();
-        });
+        document.querySelector('input[name="subdomain"]').addEventListener('input', updateStaticPageLink);
+        document.getElementById('domainSelect').addEventListener('change', updateStaticPageLink);
+        updateStaticPageLink();
 
-    document.getElementById('toggleRawInput').addEventListener('change', function () {
-        document.getElementById('rawInputArea').style.display = this.checked ? 'block' : 'none';
+        document.getElementById('toggleRawInput').addEventListener('change', function () {
+            document.getElementById('rawInputArea').style.display = this.checked ? 'block' : 'none';
+        });
     });
 
     function normalizeCustomerText() {
-        const text = document.getElementById('rawInput').value;
-        const errorDiv = document.getElementById('normalizeError');
-        errorDiv.innerText = "";
+            const text = document.getElementById('rawInput').value;
+            const errorDiv = document.getElementById('normalizeError');
+            errorDiv.innerText = "";
 
-        if (!text.trim()) {
-            errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
-            return;
-        }
-
-        const stopwords = ["llc", "jsc", "co", "ltd", "inc", "company", "corp", "corporation", "plc", "limited", "joint", "stock"];
-        let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-        let company_name = '';
-        let address = '';
-        let hotline = '';
-        let license_no = '';
-        let description = '';
-        let email = '';
-        let subdomain = '';
-
-        let full_text = lines.join('\n');
-
-        // 1. Company name = dòng đầu tiên (bỏ stopwords cuối nếu có)
-        if (lines.length) {
-            let tokens = lines[0].split(' ');
-            while (tokens.length && stopwords.includes(tokens[tokens.length - 1].toLowerCase().replace(/[\W_]+/g, ''))) {
-                tokens.pop();
+            if (!text.trim()) {
+                errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
+                return;
             }
-            company_name = tokens.join(' ').trim();
-        }
 
-        // 2. Lấy số điện thoại: dòng nào có 8-20 chữ số (USA/EU)
-        for (let l of lines) {
-            let phone = l.replace(/\D/g, '');
-            if (phone.length >= 8 && phone.length <= 20) {
-                hotline = l.match(/[\d\-\+\(\)\s]+/g)?.join('').trim() || '';
-                break;
+            let lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+            let company_name = '';
+            let address = '';
+            let hotline = '';
+            let license_no = '';
+            let description = '';
+            let email = '';
+            let subdomain = '';
+
+            let full_text = lines.join('\n');
+
+            // 1. Company name = dòng đầu tiên
+            if (lines.length) {
+                company_name = lines[0].trim();
             }
-        }
 
-        // 3. License/MST
-        let lic = full_text.match(/(License|Organization)[^\d]*[:：]?\s*([\w\-]+)/i);
-        license_no = lic ? lic[2] : '';
-
-        // 4. Địa chỉ = dòng bắt đầu từ "Full Address" hoặc chứa số, không phải số điện thoại
-        let addrFound = false;
-        for (let i = 0; i < lines.length; i++) {
-            let l = lines[i];
-            if (/Full Address/i.test(l)) {
-                let j = i + 1;
-                let addrArr = [];
-                while (j < lines.length && !/\d{8,}/.test(lines[j])) {
-                    addrArr.push(lines[j]);
-                    j++;
-                }
-                address = addrArr.join(', ');
-                addrFound = true;
-                break;
-            }
-        }
-        if (!addrFound) {
-            for (let l of lines.slice(1)) {
-                if (/[a-zA-Z]/.test(l) && !/\d{8,}/.test(l)) {
-                    address = l;
+            // 2. Lấy hotline: dòng nào có 8-20 chữ số
+            for (let l of lines) {
+                let phone = l.replace(/\D/g, '');
+                if (phone.length >= 8 && phone.length <= 20) {
+                    hotline = l.match(/[\d\-\+\(\)\s]+/g)?.join('').trim() || '';
                     break;
                 }
             }
+
+            // 3. License/MST
+            let lic = full_text.match(/(License|Organization)[^\d]*[:：]?\s*([\w\-]+)/i);
+            license_no = lic ? lic[2] : '';
+
+            // 4. Địa chỉ (lấy các dòng bắt đầu từ "Full Address" đến khi hết dòng hoặc gặp hotline)
+            let addrStart = lines.findIndex(l => /Full Address/i.test(l));
+            if (addrStart !== -1) {
+                let addrArr = [];
+                for (let i = addrStart + 1; i < lines.length; i++) {
+                    let line = lines[i];
+                    // Dừng lại nếu gặp dòng là số điện thoại hoặc dòng trống
+                    if (line.replace(/\D/g, '').length >= 8 && line.replace(/\D/g, '').length <= 20) break;
+                    if (!line.trim()) break;
+                    addrArr.push(line);
+                }
+                address = addrArr.join('\n'); // Giữ nguyên dạng xuống dòng
+            }
+
+            // 5. Email: info@subdomain.domain
+            // subdomain: tạo từ company_name (remove space, ký tự đặc biệt)
+            let rawSubdomain = company_name ? company_name.replace(/[^\w]/g, '').toLowerCase() : '';
+            // Lấy domain đang chọn ở dropdown
+            let domainText = getSelectedDomainText();
+            let autoEmail = (rawSubdomain && domainText) ? `info@${rawSubdomain}.${domainText}` : '';
+
+            // 6. Description/auto fields
+            let autoDesc = company_name
+                ? `${company_name} is a company operating in the fashion industry, providing high-quality products and reliable services to customers.`
+                : '';
+            let autoFooter = company_name
+                ? `© ${company_name} - Your trusted fashion brand.`
+                : '';
+
+            // Footer text
+            let footerText = '';
+            let footerMatch = full_text.match(/footer[:：]?\s*(.*)/i);
+            if (footerMatch && footerMatch[1]) {
+                footerText = footerMatch[1].trim();
+            }
+
+            // Subdomain (giống phần email)
+            let autoSubdomain = rawSubdomain;
+
+            document.querySelector('input[name="company_name"]').value = company_name;
+            document.querySelector('input[name="address"]').value = address;
+            document.querySelector('input[name="hotline"]').value = hotline;
+            document.querySelector('input[name="license_no"]').value = license_no;
+            document.querySelector('input[name="description"]').value = autoDesc;
+            document.querySelector('input[name="email"]').value = autoEmail;
+            document.querySelector('input[name="subdomain"]').value = autoSubdomain;
+            document.querySelector('input[name="footer_text"]').value = footerText || autoFooter;
+
+            // Link tĩnh auto (sau khi điền subdomain + domain)
+            let staticPageLink = (autoSubdomain && domainText) ? `${autoSubdomain}.${domainText}` : '';
+            document.getElementById('staticPageLink').value = staticPageLink;
         }
-        // 5. Email (nếu có)
-        let emailMatch = full_text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-        email = emailMatch ? emailMatch[0] : '';
-
-        // 6. Description/auto fields
-        let autoDesc = company_name
-            ? `${company_name} is a company operating in the fashion industry, providing high-quality products and reliable services to customers.`
-            : '';
-        let autoFooter = company_name
-            ? `© ${company_name} - Your trusted fashion brand.`
-            : '';
-
-        // Nếu trong text có footer thì lấy, không thì dùng auto
-        let footerText = '';
-        let footerMatch = full_text.match(/footer[:：]?\s*(.*)/i);
-        if (footerMatch && footerMatch[1]) {
-            footerText = footerMatch[1].trim();
-        }
-
-        // Auto email và subdomain
-        let autoEmail = makeEmail(company_name);
-        let autoSubdomain = makeSubdomain(company_name);
-
-        document.querySelector('input[name="company_name"]').value = company_name;
-        document.querySelector('input[name="address"]').value = address;
-        document.querySelector('input[name="hotline"]').value = hotline;
-        document.querySelector('input[name="license_no"]').value = license_no;
-        document.querySelector('input[name="description"]').value = autoDesc;
-        document.querySelector('input[name="email"]').value = email || autoEmail;
-        document.querySelector('input[name="subdomain"]').value = autoSubdomain;
-        document.querySelector('input[name="footer_text"]').value = footerText || autoFooter;
-
-        // Link tĩnh auto (sau khi điền subdomain + domain)
-        let domainText = getSelectedDomainText();
-        let staticPageLink = (autoSubdomain && domainText) ? `${autoSubdomain}.${domainText}` : '';
-        document.getElementById('staticPageLink').value = staticPageLink;
-    }
 
     // Validate các trường bắt buộc trước khi submit
     document.getElementById('companyForm').addEventListener('submit', function (e) {
@@ -317,7 +270,7 @@
             'footer_text',
             'description',
             'server_id',
-            'dns_record_id',
+            'domain_id',
             'template_id',
             'static_page_link'
         ];
