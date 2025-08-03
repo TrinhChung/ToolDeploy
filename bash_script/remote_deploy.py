@@ -242,6 +242,7 @@ ps -eo pid,cmd | grep "flask run" | grep -vE "bash -c|grep" | awk '{print $1}' |
     cwd="/proc/$pid/cwd"
     [ -d "$cwd" ] || continue
     cmdline=$(tr '\0' ' ' < /proc/$pid/cmdline)
+    echo "$cmdline" | grep -qiE "/usr/local/bin/" && continue
     port=$(echo "$cmdline" | grep -oP -- '--port=\K[0-9]*')
     [ -z "$port" ] && port='""'
     pwd=$(readlink -f "$cwd")
@@ -257,6 +258,9 @@ echo "}"
     print(out)
     if err.strip():
         raise RuntimeError(f"Sync failed:\n{err}")
+    if out == "{}":
+        print(f"Không có thư mục nào trên server số {server_id}")
+        return f"Không có thư mục nào trên server số {server_id}"
     data = json.load(out)
     try:
         now = datetime.utcnow()
