@@ -277,19 +277,20 @@ echo "}"
         SET port = CASE subdomain
         {case_sql}
             ELSE port
-        END
-        status = CASE status
+        END,
+        status = CASE
             WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN 'active'
             WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN 'inactive'
             ELSE status
-        END
-        activated_at = CASE status
+        END,
+        activated_at = CASE
             WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN :now
             ELSE activated_at
-        END
-        deactivated_at = CASE status
+        END,
+        deactivated_at = CASE
             WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN :now
             ELSE deactivated_at
+        END,
         sync_at = :now
         WHERE server_id = :server_id
         """
