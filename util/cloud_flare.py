@@ -290,3 +290,21 @@ def get_record_id_by_name(zone_id, record_name, record_type="A", cf_account=None
             return None
     else:
         raise Exception(f"Failed to fetch DNS records: {resp.text}")
+
+
+def delete_dns_record(zone_id, record_id, cf_account):
+    """
+    Xóa DNS record khỏi Cloudflare theo record_id (multi-account).
+    """
+    BASE_URL = "https://api.cloudflare.com/client/v4"
+    headers = build_cf_headers(cf_account)
+    url = f"{BASE_URL}/zones/{zone_id}/dns_records/{record_id}"
+    resp = requests.delete(url, headers=headers)
+    if resp.status_code == 200:
+        return {"success": True, "message": "Đã xóa DNS record thành công."}
+    else:
+        error_message = resp.json().get("errors", resp.text)
+        return {
+            "success": False,
+            "error": f"Failed to delete DNS record: {error_message}",
+        }

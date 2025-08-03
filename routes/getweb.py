@@ -14,6 +14,7 @@ from util.cloud_flare import (
     get_record_id_by_name,
     update_dns_record,
     add_or_update_txt_record,
+    delete_dns_record,
 )
 
 from service.genweb_service import (
@@ -210,3 +211,56 @@ def view_website(website_id):
     # Lấy thêm thông tin TXT record
     verification = getattr(website, "web_verification", None)
     return render_template("genweb/detail_website.html", w=w, verification=verification)
+
+
+@genweb_bp.route("/delete/<int:website_id>", methods=["POST"])
+@login_required
+def delete_website(website_id):
+    website = Website.query.get(website_id)
+    if not website:
+        flash("Không tìm thấy website!", "danger")
+        return redirect(url_for("genweb.list_website"))
+
+    # --- Xóa các bản ghi phụ thuộc ---
+    WebDomainVerification.query.filter_by(website_id=website.id).delete()
+    # WebAnalytics.query.filter_by(website_id=website.id).delete()   # ví dụ nếu có
+    # WebUser.query.filter_by(website_id=website.id).delete()        # ví dụ nếu có
+
+    # --- Xóa DNS Cloudflare (như bạn đã code) ---
+    domain = Domain.query.get(website.domain_id)
+    if not domain:
+        flash("Không tìm thấy domain!", "danger")
+        return redirect(url_for("genweb.list_website"))
+    cf_account = domain.cloudflare_account
+    zone_id = domain.zone_id
+
+    static_link = website.static_page_link  # VD: abc.example.com
+    for record_type in ["A", "TXT"]:
+        try:
+            record_id = get_record_id_by_name(
+                zone_id, static_link, record_type, cf_account
+            )
+            if record_id:
+                res = delete_dns_record(zone_id, record_id, cf_account)
+                if not res.get("success"):
+                    logger.warning(
+                        f"Không xóa được record {record_type}: {res.get('error')}"
+                    )
+        except Exception as e:
+            logger.error(f"Lỗi khi xóa record {record_type}: {e}")
+
+    # --- Xóa website ---
+    company = Company.query.get(website.company_id)
+    db.session.delete(website)
+
+    # Chỉ xóa company nếu KHÔNG còn website nào khác cùng company
+    other_website = Website.query.filter(
+        Website.company_id == website.company_id, Website.id != website.id
+    ).first()
+    if company and not other_website:
+        db.session.delete(company)
+
+    db.session.commit()
+
+    flash("✅ Đã xóa website và DNS thành công!", "success")
+    return redirect(url_for("genweb.list_website"))
