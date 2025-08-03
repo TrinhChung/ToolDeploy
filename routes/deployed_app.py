@@ -16,7 +16,7 @@ from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
-from bash_script.remote_deploy import run_remote_deploy, remote_turn_off
+from bash_script.remote_deploy import run_remote_deploy, remote_turn_off, do_sync
 from util.cloud_flare import (
     check_dns_record_exists,
     add_dns_record,
@@ -258,6 +258,23 @@ def list_app():
         .all()
     )
     return render_template("deployed_app/list_app.html", deployed_apps=deployed_apps)
+
+@deployed_app_bp.route("/sync")
+@login_required
+def list_app():
+    # Luôn expire session để lấy dữ liệu mới nhất từ DB (tránh cache)
+    db.session.expire_all()
+    servers = (
+        db.session.query(Server).all()
+    )
+    for server in db.session.query(Server).all():
+        try:
+            do_sync(server.ip, server.admin_username, server.admin_password, server.id)
+        except Exception as e:
+            flash(e)
+            return redirect(url_for("deployed_app.list_app"))
+    flash("Đồng bộ thành công port và status")
+    return redirect(url_for("deployed_app.list_app"))
 
 
 @deployed_app_bp.route("/add-dns-txt/<int:app_id>", methods=["POST"])

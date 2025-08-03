@@ -16,6 +16,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from database_init import db
+import json
 
 import paramiko
 import select   # dùng cho Linux; trên Windows channel.recv_ready() đã OK
@@ -225,3 +229,75 @@ def run_remote_deploy(
     if exit_code != 0:
         raise RuntimeError(f"Remote script exit {exit_code}")
     return log_text
+
+def do_sync(
+    host: str, user: str,
+    password: str, server_id: int
+) -> str:
+    """Tắt các tiến trình flask run đúng thư mục đó."""
+    ssh = _connect_ssh(host, user, password)
+
+    cmd = r'''echo -n "{"; first=1
+ps -eo pid,cmd | grep "flask run" | grep -vE "bash -c|grep" | awk '{print $1}' | while read pid; do
+    cwd="/proc/$pid/cwd"
+    [ -d "$cwd" ] || continue
+    cmdline=$(tr '\0' ' ' < /proc/$pid/cmdline)
+    port=$(echo "$cmdline" | grep -oP -- '--port=\K[0-9]*')
+    [ -z "$port" ] && port='""'
+    pwd=$(readlink -f "$cwd")
+    [ $first -eq 1 ] && first=0 || echo -n ", "
+    echo -n "\"$pwd\": $port"
+done
+echo "}"
+'''
+    stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
+
+    out, err = stdout.read().decode(), stderr.read().decode()
+    ssh.close()
+    print(out)
+    if err.strip():
+        raise RuntimeError(f"Sync failed:\n{err}")
+    data = json.load(out)
+    try:
+        now = datetime.utcnow()
+        case_sql = "\n".join(
+            f"    WHEN :dir_{i} THEN :port_{i}"
+            for i, _ in enumerate(data)
+        )
+        in_clause = ", ".join(f":dir_{i}" for i in range(len(data)))
+
+        sql = f"""
+        UPDATE deployed_app
+        SET port = CASE subdomain
+        {case_sql}
+            ELSE port
+        END
+        status = CASE status
+            WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN 'active'
+            WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN 'inactive'
+            ELSE status
+        END
+        activated_at = CASE status
+            WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN :now
+            ELSE activated_at
+        END
+        deactivated_at = CASE status
+            WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN :now
+            ELSE deactivated_at
+        sync_at = :now
+        WHERE server_id = :server_id
+        """
+
+        params = {"now": now, "server_id": server_id}
+        for i, (directory, port) in enumerate(data.items()):
+            
+            params[f"dir_{i}"] = directory.split('/home/')[-1]
+            params[f"port_{i}"] = port
+        print(sql)
+        db.session.execute(text(sql), params)
+        db.session.commit()
+        return "Đồng bộ thành công, reload để cập nhật"
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print("❌ Error during bulk update:", str(e))
+        raise RuntimeError(f"Sync failed: Lỗi chạy lệnh mysql {e}")
