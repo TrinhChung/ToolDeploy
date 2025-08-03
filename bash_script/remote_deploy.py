@@ -258,12 +258,12 @@ echo "}"
     print("start")
     print(out)
     print("end")
-    if out == "{}":
-        print(f"Không có thư mục nào trên server số {server_id}")
-        return f"Không có thư mục nào trên server số {server_id}"
     if err.strip():
         raise RuntimeError(f"Sync failed:\n{err}")
     data = json.loads(out)
+    if not data:
+        print(f"Không có thư mục nào trên server số {server_id}")
+        return f"Không có thư mục nào trên server số {server_id}"
     try:
         now = datetime.utcnow()
         case_sql = "\n".join(
