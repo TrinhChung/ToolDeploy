@@ -271,7 +271,7 @@ def sync():
         try:
             do_sync(server.ip, server.admin_username, server.admin_password, server.id)
         except Exception as e:
-            flash(e)
+            flash(f"Lỗi sync: {e}")
             return redirect(url_for("deployed_app.list_app"))
     flash("Đồng bộ thành công port và status", "success")
     return redirect(url_for("deployed_app.list_app"))

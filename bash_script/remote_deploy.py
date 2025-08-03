@@ -255,13 +255,15 @@ echo "}"
 
     out, err = stdout.read().decode(), stderr.read().decode()
     ssh.close()
+    print("start")
     print(out)
-    if err.strip():
-        raise RuntimeError(f"Sync failed:\n{err}")
+    print("end")
     if out == "{}":
         print(f"Không có thư mục nào trên server số {server_id}")
         return f"Không có thư mục nào trên server số {server_id}"
-    data = json.load(out)
+    if err.strip():
+        raise RuntimeError(f"Sync failed:\n{err}")
+    data = json.loads(out)
     try:
         now = datetime.utcnow()
         case_sql = "\n".join(
