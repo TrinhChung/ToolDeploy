@@ -267,7 +267,7 @@ def sync():
     servers = (
         db.session.query(Server).all()
     )
-    for server in db.session.query(Server).all():
+    for server in servers:
         try:
             do_sync(server.ip, server.admin_username, server.admin_password, server.id)
         except Exception as e:
