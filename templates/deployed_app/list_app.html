@@ -8,13 +8,16 @@
 			<i class="fa fa-th-list text-primary me-2"></i>
 			Danh sách App Đã Deploy
 		</h2>
-		<a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
-			<i class="fa fa-plus"></i> Deploy App mới
-		</a>
-		<a href="{{ url_for('deployed_app.sync') }}" class="btn btn-info">
-			<i class="fa fa-plus"></i> Đồng bộ port và status
-		</a>
+		<div class="d-flex gap-2">
+			<a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
+				<i class="fa fa-plus"></i> Deploy App mới
+			</a>
+			<a href="{{ url_for('deployed_app.sync') }}" class="btn btn-info">
+				<i class="fa fa-sync-alt"></i> Đồng bộ port và status
+			</a>
+		</div>
 	</div>
+
 	<div class="table-responsive rounded shadow-sm bg-white">
 		<table class="table table-hover align-middle mb-0">
 			<thead class="table-light">
