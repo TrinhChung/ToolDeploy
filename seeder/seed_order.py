@@ -88,6 +88,6 @@ def seed_orders(app):
             added_count += 1
         if added_count > 0:
             db.session.commit()
-            print(f"✅ Đã thêm {added_count} đơn hàng mới.")
+            print(f"Success:  Đã thêm {added_count} đơn hàng mới.")
         else:
-            print("⚠️ Không có đơn hàng mới để thêm.")
+            print("Warning:  Không có đơn hàng mới để thêm.")

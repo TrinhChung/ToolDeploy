@@ -5,74 +5,191 @@
 <div class="container py-4">
 	<a href="{{ url_for('genweb.list_website') }}" class="btn btn-outline-secondary mb-3">&larr; Quay lại danh sách</a>
 	<h2 class="mb-3">Chi tiết Website</h2>
-	<div class="card" style="max-width:700px">
-		<div class="card-body">
-			<h4 class="card-title mb-3">{{ w.company_name }}</h4>
-			<form method="POST">
-				<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-				<div class="mb-2"><b>Tên công ty:</b>
-					<input name="company_name" class="form-control" value="{{ w.company_name|default('') }}">
-				</div>
-				<div class="mb-2"><b>Địa chỉ:</b>
-					<textarea name="address" class="form-control" rows="3">{{ w.address|default('') }}</textarea>
-				</div>
-				<div class="mb-2"><b>Hotline:</b>
-					<input name="hotline" class="form-control" value="{{ w.hotline|default('') }}">
-				</div>
-				<div class="mb-2"><b>Email:</b>
-					<input name="email" class="form-control" value="{{ w.email|default('') }}">
-				</div>
-				<div class="mb-2"><b>Google Map Embed:</b>
-					<input name="google_map_embed" class="form-control" value="{{ w.google_map_embed|default('') }}">
-					<div class="form-text">
-						Dán <code>src=""</code> của iframe Google Map hoặc nhập địa chỉ, hệ thống sẽ tự tạo link embed nếu để trống.
-					</div>
-				</div>
-				<button class="btn btn-primary btn-sm" type="submit"><i class="fa fa-save"></i> Lưu cập nhật</button>
-			</form>
-			<hr>
-			<div class="mb-2"><b>Mã số thuế:</b> {{ w.license_no }}</div>
-			<div class="mb-2"><b>Server:</b> {{ w.server_name }} ({{ w.server_ip }})</div>
-			<div class="mb-2"><b>Domain:</b> {{ w.domain_name }}</div>
-			<div class="mb-2"><b>Template:</b> {{ w.template_name }}</div>
-			<div class="mb-2"><b>Link tĩnh:</b>
-				{% if w.static_page_link %}
-				<a href="http://{{ w.static_page_link }}" target="_blank">{{ w.static_page_link }}</a>
-				{% else %}<span style="color:#888">-</span>{% endif %}
-			</div>
-			<div class="mb-2"><b>Mô tả:</b> {{ w.description }}</div>
-			<div class="mb-2"><b>Footer:</b> {{ w.footer_text }}</div>
-			{# Ghi chú chỉ hiển thị cho admin #}
-			{% if current_user.is_authenticated and current_user.is_admin %}
-			<div class="mb-3">
-				<b>Ghi chú (log):</b>
-				<pre style="
-			    background: #212529;
-			    color: #04e762;
-			    padding: 12px 16px;
-			    border-radius: 8px;
-			    font-size: 14px;
-			    font-family: 'Fira Mono', 'Consolas', monospace;
-			    white-space: pre-wrap;
-			    word-break: break-all;
-			    max-height: 350px;
-			    overflow: auto;
-			    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-			    margin-top:8px;
-			  ">{{ w.note|default('Chưa có ghi chú') }}</pre>
-			</div>
-			{% endif %}
+	<div class="row">
+		<div class="col-12">
+			<div class="card w-100">
+				<div class="card-body">
+					<h4 class="card-title mb-3">{{ w.company_name }}</h4>
 
-			{% if w.google_map_embed %}
-			<div class="mt-3">
-				<b>Bản đồ Google Map:</b>
-				<div style="border-radius:12px;overflow:hidden;margin-top:5px">
-					<iframe src="{{ w.google_map_embed }}" width="100%" height="220" style="border:0" allowfullscreen
-						loading="lazy"></iframe>
+					<!-- Nút bật/tắt chỉnh sửa -->
+					<div id="editActionBtns">
+						<button class="btn btn-warning btn-sm mb-3" id="editToggleBtn" type="button" onclick="toggleEditMode()">Cập
+							nhật</button>
+					</div>
+
+					<!-- Dạng xem thông tin -->
+					<div id="viewMode">
+						<div class="row g-3">
+							<div class="col-md-6">
+								<b>Tên công ty:</b> {{ w.company_name }}
+							</div>
+							<div class="col-md-3">
+								<b>Hotline:</b> {{ w.hotline }}
+							</div>
+							<div class="col-md-3">
+								<b>Email:</b> {{ w.email }}
+							</div>
+						</div>
+						<div class="row mt-3">
+							<div class="col-md-12">
+								<b>Địa chỉ:</b> {{ w.address }}
+							</div>
+						</div>
+						<div class="row mt-3">
+							<div class="col-md-12">
+								<b>Bản đồ Google Map:</b>
+								{% if w.google_map_embed %}
+								{% if '<iframe' in w.google_map_embed %}
+								<div style="border-radius:12px;overflow:hidden;margin-top:8px;">
+									{{ w.google_map_embed | safe }}
+								</div>
+								{% else %}
+								<div style="border-radius:12px;overflow:hidden;margin-top:8px;">
+									<iframe src="{{ w.google_map_embed }}" width="100%" height="220" style="border:0;" allowfullscreen
+										loading="lazy"></iframe>
+								</div>
+								{% endif %}
+								{% else %}
+								<span style="color:#888">Chưa có bản đồ</span>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+
+					<!-- Dạng form cập nhật, mặc định ẩn -->
+					<form method="POST" id="editForm" style="display:none">
+						<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+						<div class="row g-3">
+							<div class="col-md-6">
+								<b>Tên công ty:</b>
+								<input name="company_name" class="form-control" value="{{ w.company_name|default('') }}">
+							</div>
+							<div class="col-md-3">
+								<b>Hotline:</b>
+								<input name="hotline" class="form-control" value="{{ w.hotline|default('') }}">
+							</div>
+							<div class="col-md-3">
+								<b>Email:</b>
+								<input name="email" class="form-control" value="{{ w.email|default('') }}">
+							</div>
+						</div>
+						<div class="row mt-3">
+							<div class="col-md-12">
+								<b>Địa chỉ:</b>
+								<textarea name="address" class="form-control" rows="2">{{ w.address|default('') }}</textarea>
+							</div>
+						</div>
+						<div class="row mt-3">
+							<div class="col-md-12">
+								<b>Google Map Embed:</b>
+								<input name="google_map_embed" class="form-control" value="{{ w.google_map_embed|default('') }}">
+								<div class="form-text">
+									Dán <code>src=""</code> của iframe Google Map hoặc dán cả thẻ &lt;iframe&gt; hoặc chỉ dán link, hệ
+									thống sẽ tự nhận biết và hiển thị đúng.
+								</div>
+							</div>
+						</div>
+						<div class="mt-3" id="saveCancelBtns" style="display:flex;gap:8px;">
+							<button class="btn btn-primary btn-sm" type="submit"><i class="fa fa-save"></i> Lưu</button>
+							<button class="btn btn-secondary btn-sm" type="button" onclick="toggleEditMode()">Hủy</button>
+						</div>
+					</form>
+					<hr>
+					<div class="row g-3">
+						<div class="col-md-4 col-12">
+							<b>Mã số thuế:</b> {{ w.license_no }}
+						</div>
+						<div class="col-md-4 col-12">
+							<b>Server:</b> {{ w.server_name }} ({{ w.server_ip }})
+						</div>
+						<div class="col-md-4 col-12">
+							<b>Domain:</b> {{ w.domain_name }}
+						</div>
+						<div class="col-md-4 col-12">
+							<b>Template:</b> {{ w.template_name }}
+						</div>
+						<div class="col-md-8 col-12">
+							<b>Link tĩnh:</b>
+							{% if w.static_page_link %}
+							<a href="http://{{ w.static_page_link }}" target="_blank">{{ w.static_page_link }}</a>
+							{% else %}
+							<span style="color:#888">-</span>
+							{% endif %}
+						</div>
+						<div class="col-md-12 col-12">
+							<b>Mô tả:</b> {{ w.description }}
+						</div>
+						<div class="col-md-12 col-12">
+							<b>Footer:</b> {{ w.footer_text }}
+						</div>
+					</div>
+
+					<!-- Block cập nhật TXT xác minh domain -->
+					<div class="card my-4 shadow-sm border border-info">
+						<div class="card-body">
+							<h6 class="mb-2 text-info"><i class="fa fa-key me-2"></i>Xác minh domain (TXT record)</h6>
+							{% if verification %}
+							<div class="mb-2">
+								<b>Bản ghi TXT hiện tại:</b>
+								<code class="text-success">{{ verification.txt_value }}</code>
+								<span class="badge bg-secondary ms-2">Cập nhật {{ verification.create_count or 1 }} lần</span>
+							</div>
+							{% else %}
+							<div class="mb-2 text-muted">Chưa có bản ghi TXT xác minh</div>
+							{% endif %}
+							<form method="post" class="d-flex flex-wrap align-items-center gap-2">
+								<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+								<input type="hidden" name="update_txt" value="1">
+								<input name="txt_value" class="form-control" style="max-width:350px" required
+									value="{{ verification.txt_value if verification else '' }}"
+									placeholder="Nhập giá trị TXT xác minh...">
+								<button type="submit" class="btn btn-outline-primary btn-sm">
+									<i class="fa fa-sync-alt me-1"></i>Lưu TXT
+								</button>
+							</form>
+							<div class="form-text text-muted mt-1">Bạn có thể cập nhật giá trị TXT bất cứ lúc nào.</div>
+						</div>
+					</div>
+
+					{% if current_user.is_authenticated and current_user.is_admin %}
+					<hr>
+					<div class="mb-3">
+						<b>Ghi chú (log):</b>
+						<pre style="
+                            background: #212529;
+                            color: #04e762;
+                            padding: 12px 16px;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-family: 'Fira Mono', 'Consolas', monospace;
+                            white-space: pre-wrap;
+                            word-break: break-all;
+                            max-height: 350px;
+                            overflow: auto;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                            margin-top:8px;
+                          ">{{ w.note|default('Chưa có ghi chú') }}</pre>
+					</div>
+					{% endif %}
 				</div>
 			</div>
-			{% endif %}
 		</div>
 	</div>
 </div>
+<script>
+	function toggleEditMode() {
+		const view = document.getElementById('viewMode');
+		const form = document.getElementById('editForm');
+		const editBtns = document.getElementById('editActionBtns');
+		if (view.style.display === "none") {
+			view.style.display = "";
+			form.style.display = "none";
+			editBtns.innerHTML = `<button class="btn btn-warning btn-sm mb-3" id="editToggleBtn" type="button" onclick="toggleEditMode()">Cập nhật</button>`;
+		} else {
+			view.style.display = "none";
+			form.style.display = "";
+			editBtns.innerHTML = ""; // Ẩn nút cập nhật (vì lúc này đã có Lưu/Hủy trong form)
+		}
+	}
+</script>
 {% endblock %}

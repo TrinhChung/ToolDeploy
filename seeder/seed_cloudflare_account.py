@@ -17,7 +17,7 @@ def seed_cloudflare_account(app):
         ns2 = "karsyn.ns.cloudflare.com"
 
         if not api_token or not account_id:
-            print("❌ Thiếu CLOUD_FLARE_TOKEN hoặc CLOUDFLARE_ACCOUNT_ID trong .env")
+            print("Error:   Thiếu CLOUD_FLARE_TOKEN hoặc CLOUDFLARE_ACCOUNT_ID trong .env")
             return
 
         # Kiểm tra tồn tại theo account_id (ưu tiên)
@@ -33,6 +33,6 @@ def seed_cloudflare_account(app):
             )
             db.session.add(cf_account)
             db.session.commit()
-            print(f"✅ Đã tạo CloudflareAccount: {name} ({account_id})")
+            print(f"Success:  Đã tạo CloudflareAccount: {name} ({account_id})")
         else:
-            print("⚠️ CloudflareAccount đã tồn tại, bỏ qua.")
+            print("Warning:  CloudflareAccount đã tồn tại, bỏ qua.")

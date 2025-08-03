@@ -28,6 +28,6 @@ def seed_user_fe(app):
                 added_count += 1
         if added_count > 0:
             db.session.commit()
-            print(f"✅ Đã thêm {added_count} user FE mới.")
+            print(f"Success:  Đã thêm {added_count} user FE mới.")
         else:
-            print("⚠️ Không có user FE mới để thêm (đã tồn tại hết).")
+            print("Warning:  Không có user FE mới để thêm (đã tồn tại hết).")

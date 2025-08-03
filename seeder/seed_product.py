@@ -33,6 +33,6 @@ def seed_product(app):
                 added_count += 1
         if added_count > 0:
             db.session.commit()
-            print(f"✅ Đã thêm {added_count} sản phẩm mới.")
+            print(f"Success:  Đã thêm {added_count} sản phẩm mới.")
         else:
-            print("⚠️ Không có sản phẩm mới để thêm (đã tồn tại hết).")
+            print("Warning:  Không có sản phẩm mới để thêm (đã tồn tại hết).")

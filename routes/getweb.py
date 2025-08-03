@@ -8,10 +8,12 @@ from models.server import Server
 from util.dns_helper import create_dns_record_if_needed
 from models.website import Website
 from models.company import Company
+from models.web_domain_verification import WebDomainVerification
 from util.cloud_flare import (
     check_dns_record_exists,
     get_record_id_by_name,
     update_dns_record,
+    add_or_update_txt_record,
 )
 
 from service.genweb_service import (
@@ -51,7 +53,7 @@ def create_website():
                     zone_id=domain.zone_id, subdns=record_name, cf_account=cf_account
                 )
                 if exists:
-                    flash("❌ Subdomain này đã tồn tại trên Cloudflare!", "danger")
+                    flash("Error:   Subdomain này đã tồn tại trên Cloudflare!", "danger")
                     logger.warning(
                         f"Phát hiện subdomain trùng (Cloudflare): zone_id={domain.zone_id}, subdomain={record_name}"
                     )
@@ -114,7 +116,7 @@ def create_website():
         except Exception as e:
             logger.error(f"Lỗi khi update proxied Cloudflare: {str(e)}")
 
-        flash("✅ Website và công ty đã được tạo thành công!", "success")
+        flash("Success:  Website và công ty đã được tạo thành công!", "success")
         logger.info(
             f"Đã tạo website mới: company_id={company.id}, server_id={server_id}, domain_id={domain_id}, template_id={template_id}, domain_full={domain_full}"
         )
@@ -142,17 +144,54 @@ def list_website():
 @genweb_bp.route("/detail/<int:website_id>", methods=["GET", "POST"])
 @login_required
 def view_website(website_id):
+    website = Website.query.get(website_id)
+    if not website:
+        flash("Website không tồn tại!", "danger")
+        return redirect(url_for("genweb.list_website"))
+
+    # Xử lý cập nhật TXT riêng biệt với cập nhật công ty
     if request.method == "POST":
+        if "update_txt" in request.form:
+            txt_value = request.form.get("txt_value", "").strip()
+            if not txt_value:
+                flash("Giá trị TXT không được để trống!", "danger")
+            else:
+                domain = Domain.query.get_or_404(website.domain_id)
+                cf_account = domain.cloudflare_account
+                static_page_link = website.static_page_link or ""
+                parts = static_page_link.split(".")
+                if len(parts) > 2:
+                    subdomain = parts[0]  # lấy phần subdomain đầu tiên
+                else:
+                    subdomain = ""  # hoặc None
+                result = add_or_update_txt_record(
+                    zone_id=domain.zone_id,
+                    subdns=subdomain,
+                    dns=domain.name,
+                    new_txt=txt_value,
+                    ttl=3600,
+                    cf_account=cf_account,
+                )
+                # Lấy hoặc tạo bản ghi TXT cho website
+                verification = website.web_verification
+                if verification:
+                    verification.txt_value = txt_value
+                    verification.create_count = (verification.create_count or 0) + 1
+                else:
+                    verification = WebDomainVerification(
+                        website_id=website.id, txt_value=txt_value, create_count=1
+                    )
+                    db.session.add(verification)
+                db.session.commit()
+                flash("Cập nhật TXT record thành công!", "success")
+            return redirect(url_for("genweb.view_website", website_id=website_id))
+
+        # Xử lý cập nhật thông tin công ty như cũ (nếu có form khác)
         company_name = request.form.get("company_name", "").strip()
         address = request.form.get("address", "").strip()
         hotline = request.form.get("hotline", "").strip()
         email = request.form.get("email", "").strip()
         google_map_embed = request.form.get("google_map_embed", "").strip()
-
-        website = Website.query.get(website_id)
-        if not website:
-            flash("Không tìm thấy website!", "danger")
-            return redirect(url_for("genweb.list_website"))
 
         company = Company.query.get(website.company_id)
         if company:
@@ -165,78 +204,9 @@ def view_website(website_id):
             flash("Đã cập nhật thông tin công ty!", "success")
         else:
             flash("Không tìm thấy thông tin công ty!", "danger")
-
         return redirect(url_for("genweb.view_website", website_id=website_id))
 
     w = get_website_detail(website_id)
-    if not w:
-        flash("Website không tồn tại!", "danger")
-        return redirect(url_for("genweb.list_website"))
-
-    return render_template("genweb/detail_website.html", w=w)
-
-
-@genweb_bp.route("/delete/<int:website_id>", methods=["POST"])
-@login_required
-def delete_website(website_id):
-    website = Website.query.get(website_id)
-    if not website:
-        flash("Không tìm thấy website!", "danger")
-        return redirect(url_for("genweb.list_website"))
-
-    # --- Lấy domain và subdomain để xóa DNS ---
-    domain = Domain.query.get(website.domain_id)
-    if not domain:
-        flash("Không tìm thấy domain!", "danger")
-        return redirect(url_for("genweb.list_website"))
-    cf_account = domain.cloudflare_account
-    zone_id = domain.zone_id
-
-    # Subdomain và tên bản ghi
-    static_link = website.static_page_link  # VD: abc.example.com
-    record_name = static_link  # nếu lưu full subdomain.domain.com
-
-    # --- Xóa record A ---
-    try:
-        a_record_id = get_record_id_by_name(zone_id, record_name, "A", cf_account)
-        if a_record_id:
-            update_dns_record(
-                zone_id,
-                a_record_id,
-                record_name,
-                "",
-                "A",
-                proxied=False,
-                cf_account=cf_account,
-                delete=True,
-            )
-    except Exception as e:
-        logger.error(f"Lỗi khi xóa record A: {e}")
-
-    # --- Xóa record TXT ---
-    try:
-        txt_record_id = get_record_id_by_name(zone_id, record_name, "TXT", cf_account)
-        if txt_record_id:
-            update_dns_record(
-                zone_id,
-                txt_record_id,
-                record_name,
-                "",
-                "TXT",
-                proxied=False,
-                cf_account=cf_account,
-                delete=True,
-            )
-    except Exception as e:
-        logger.error(f"Lỗi khi xóa record TXT: {e}")
-
-    # --- Xóa website (và company nếu muốn) ---
-    company = Company.query.get(website.company_id)
-    db.session.delete(website)
-    # Nếu muốn xóa cả công ty liên quan (cẩn thận chỉ xóa khi không còn website nào dùng chung công ty này!)
-    if company:
-        db.session.delete(company)
-    db.session.commit()
-
-    flash("✅ Đã xóa website và DNS thành công!", "success")
-    return redirect(url_for("genweb.list_website"))
+    # Lấy thêm thông tin TXT record
+    verification = getattr(website, "web_verification", None)
+    return render_template("genweb/detail_website.html", w=w, verification=verification)

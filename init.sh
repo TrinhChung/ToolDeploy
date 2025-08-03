@@ -2,7 +2,7 @@
 
 set -e
 set -o pipefail
-trap 'echo "Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
+trap 'echo "Error:   Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
 
 INPUT_DIR="$1"
 APP_ID="$2"
@@ -35,7 +35,7 @@ if ! dpkg -s git &> /dev/null; then
   echo "Cài đặt Git..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
 else
-  echo "Git đã được cài."
+  echo "Success:  Git đã được cài."
 fi
 
 # --- Moreutils ---
@@ -51,7 +51,7 @@ if ! dpkg -s nginx &> /dev/null; then
   echo "Cài đặt Nginx..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
 else
-  echo "Nginx đã được cài."
+  echo "Success:  Nginx đã được cài."
 fi
 
 sudo ufw allow 80
@@ -62,7 +62,7 @@ if ! command -v python3 &> /dev/null; then
   echo "Cài đặt Python3..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3
 else
-  echo "Python3 đã được cài."
+  echo "Success:  Python3 đã được cài."
 fi
 
 # --- Pip ---
@@ -70,14 +70,14 @@ if ! command -v pip3 &> /dev/null; then
   echo "Cài đặt PIP..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
 else
-  echo "PIP đã được cài."
+  echo "Success:  PIP đã được cài."
 fi
 
 if ! dpkg -s python3-venv &> /dev/null; then
   echo "Cài đặt Virtual env..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-venv
 else
-  echo "Virtual env đã được cài."
+  echo "Success:  Virtual env đã được cài."
 fi
 
 SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(24))")
@@ -88,7 +88,7 @@ if ! command -v yq &> /dev/null; then
   sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
   sudo chmod +x /usr/local/bin/yq
 else
-  echo "yq đã được cài."
+  echo "Success:  yq đã được cài."
 fi
 
 # --- Docker ---
@@ -108,41 +108,26 @@ if ! dpkg -s docker-ce &> /dev/null; then
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 else
-  echo "Docker đã được cài."
-fi
-
-if ! command -v node &>/dev/null || [[ "$(node -v)" != v18* ]]; then
-  echo "Đang cài đặt Node.js 18.x..."
-  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
-else
-  echo "Success:  Node.js $(node -v) đã được cài."
-fi
-
-if ! command -v pm2 &> /dev/null; then
-    echo "pm2 chưa được cài, tiến hành cài đặt..."
-    npm install -g pm2
-else
-    echo "pm2 đã được cài"
+  echo "Success:  Docker đã được cài."
 fi
 
 if ! command -v nc &> /dev/null; then
   echo "📡 Cài đặt netcat..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y netcat
 else
-  echo "netcat đã được cài."
+  echo "Success:  netcat đã được cài."
 fi
 
 # --- Kiểm tra ---
 echo
 echo "Kiểm tra package"
-echo "🔍 Phiên bản kiểm tra:"
-git --version || echo "Git error"
-nginx -v || echo "Nginx error"
-yq --version || echo "yq error"
-docker --version || echo "Docker error"
-docker compose version || echo "Compose plugin error"
-python3 --version || echo "Python error"
+echo "Check:  Phiên bản kiểm tra:"
+git --version || echo "Git Error:  "
+nginx -v || echo "Nginx Error:  "
+yq --version || echo "yq Error:  "
+docker --version || echo "Docker Error:  "
+docker compose version || echo "Compose plugin Error:  "
+python3 --version || echo "Python Error:  "
 
 # --- xử lý pull code ---
 echo
@@ -153,7 +138,7 @@ if [ ! -d "$TARGET_DIR" ]; then
   echo "Thư mục chưa tồn tại, đang clone từ git..."
   git clone "$REPO_URL" "$TARGET_DIR"
 else
-  echo "Thư mục đã tồn tại, bỏ qua git clone."
+  echo "Success:  Thư mục đã tồn tại, bỏ qua git clone."
 fi
 
 # --- xử lý port ---
@@ -172,7 +157,7 @@ else
 fi
 
 if [ -z "$NEW_PORT" ]; then
-  echo "Không tìm được port phù hợp!"
+  echo "Error:   Không tìm được port phù hợp!"
   exit 1
 fi
 
@@ -205,7 +190,7 @@ if ! docker network ls --format '{{.Name}}' | grep -q '^shared-net$'; then
   echo "Mạng shared-net chưa tồn tại, tạo mới..."
   docker network create shared-net
 else
-  echo "Mạng shared-net đã tồn tại."
+  echo "Success:  Mạng shared-net đã tồn tại."
 fi
 
 echo
@@ -244,7 +229,7 @@ networks:
     external: true
 EOF
 
-echo "File docker-compose.yml đã được tạo tại: /home/docker-compose.yml"
+echo "Success:  File docker-compose.yml đã được tạo tại: /home/docker-compose.yml"
 
 echo
 echo "Tạo file cấu hình nginx"
@@ -291,7 +276,7 @@ else
   pip install certbot-nginx
   pip install certbot
 fi
-echo "Certbot đã được cài."
+echo "Success:  Certbot đã được cài."
 
 echo
 echo "Cấu hình certbot"
@@ -300,11 +285,11 @@ if [ -f "$CONFIG_FILE" ]; then
   sudo /home/certbotEnv/bin/certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
   sudo /home/certbotEnv/bin/certbot renew
 else
-  echo "File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
+  echo "Error:   File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
 fi
 
 deactivate
-echo "Certbot đã kích hoạt"
+echo "Success:  Certbot đã kích hoạt"
 
 echo
 echo "Chạy docker"
@@ -313,7 +298,7 @@ cd /home
 db_container_count=$(docker ps -a --filter "name=mysql_db" --format "{{.Names}}" | wc -l)
 
 if [ "$db_container_count" -eq 1 ] && nc -z 127.0.0.1 3306; then
-  echo "MySQL đang chạy trên port 3306."
+  echo "Success:  MySQL đang chạy trên port 3306."
 else
   echo "Khởi động MySQL container..."
   docker compose up -d --build
@@ -348,7 +333,7 @@ else
     flask db upgrade &&
     pm2 start "flask run --host=0.0.0.0 --port=$NEW_PORT" --name="$DNS_WEB"
     disown
-    echo "Flask started trên port $NEW_PORT"
+    echo "Success:  Flask started trên port $NEW_PORT"
     exit 0
   else
     echo "Lệnh thất bại"

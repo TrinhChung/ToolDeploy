@@ -165,8 +165,8 @@ def create_dns_record_if_needed(subdomain, domain_name, domain, server):
             zone_id=domain.zone_id, subdns=record_name, cf_account=cf_account
         )
         if exists:
-            logger.warning(f"⚠️ Bản ghi A {record_name} đã tồn tại.")
-            flash(f"⚠️ Bản ghi A {record_name} đã tồn tại.", "danger")
+            logger.warning(f"Warning:  Bản ghi A {record_name} đã tồn tại.")
+            flash(f"Warning:  Bản ghi A {record_name} đã tồn tại.", "danger")
             return False
         add_dns_record(
             zone_id=domain.zone_id,
@@ -177,10 +177,10 @@ def create_dns_record_if_needed(subdomain, domain_name, domain, server):
             proxied=False,
             cf_account=cf_account,
         )
-        logger.info(f"✅ Đã tạo bản ghi A: {record_name} → {server.ip}")
+        logger.info(f"Success:  Đã tạo bản ghi A: {record_name} → {server.ip}")
         return True
     except Exception as e:
-        logger.error(f"❌ Lỗi khi tạo bản ghi A: {str(e)}")
+        logger.error(f"Error:   Lỗi khi tạo bản ghi A: {str(e)}")
         flash(f"Lỗi tạo bản ghi DNS: {e}", "danger")
         return False
 

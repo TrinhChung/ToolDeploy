@@ -28,7 +28,7 @@ myenv\Scripts\Activate.ps1
 
 ---
 
-## ❌ 3. Tắt môi trường ảo
+## Error:   3. Tắt môi trường ảo
 
 ```bash
 deactivate

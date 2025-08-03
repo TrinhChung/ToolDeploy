@@ -40,7 +40,7 @@ UNITED STATES""",
         if not user and seed_email:
             user = User.query.filter_by(email=seed_email).first()
         if not user:
-            print("❌ Không tìm thấy user để gán cho company. Kiểm tra .env và seed user trước!")
+            print("Error:   Không tìm thấy user để gán cho company. Kiểm tra .env và seed user trước!")
             return
 
         for data in companies:
@@ -49,7 +49,7 @@ UNITED STATES""",
             if not Company.query.filter_by(name=data['name'], user_id=user.id).first():
                 company = Company(**data_with_user)
                 db.session.add(company)
-                print(f"✅ Đã tạo company: {data['name']}")
+                print(f"Success:  Đã tạo company: {data['name']}")
             else:
-                print(f"⚠️ Company '{data['name']}' đã tồn tại cho user này, bỏ qua.")
+                print(f"Warning:  Company '{data['name']}' đã tồn tại cho user này, bỏ qua.")
         db.session.commit()

@@ -307,5 +307,5 @@ echo "}"
         return "Đồng bộ thành công, reload để cập nhật"
     except SQLAlchemyError as e:
         db.session.rollback()
-        print("❌ Error during bulk update:", str(e))
+        print("Error:   Error during bulk update:", str(e))
         raise RuntimeError(f"Sync failed: Lỗi chạy lệnh mysql {e}")
