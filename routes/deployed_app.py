@@ -273,7 +273,7 @@ def sync():
         except Exception as e:
             flash(e)
             return redirect(url_for("deployed_app.list_app"))
-    flash("Đồng bộ thành công port và status")
+    flash("Đồng bộ thành công port và status", "success")
     return redirect(url_for("deployed_app.list_app"))
 
 
