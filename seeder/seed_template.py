@@ -32,8 +32,8 @@ def seed_template(app):
                     backend=tpl["backend"],
                 )
                 db.session.add(template)
-                print(f"✅ Đã tạo Template: {tpl['name']}")
+                print(f"Success:  Đã tạo Template: {tpl['name']}")
             else:
-                print(f"⚠️ Template '{tpl['name']}' đã tồn tại, bỏ qua.")
+                print(f"Warning:  Template '{tpl['name']}' đã tồn tại, bỏ qua.")
 
         db.session.commit()

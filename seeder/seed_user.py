@@ -16,7 +16,7 @@ def seed_admin_user(app):
         raw_password = os.getenv("ADMIN_PASSWORD")
 
         if not username or not email or not raw_password:
-            print("❌ Thiếu ADMIN_USERNAME, ADMIN_EMAIL hoặc ADMIN_PASSWORD trong .env")
+            print("Error:   Thiếu ADMIN_USERNAME, ADMIN_EMAIL hoặc ADMIN_PASSWORD trong .env")
             return
 
         if not User.query.filter_by(username=username).first():
@@ -29,6 +29,6 @@ def seed_admin_user(app):
             )
             db.session.add(user)
             db.session.commit()
-            print(f"✅ Đã tạo user admin: {username}")
+            print(f"Success:  Đã tạo user admin: {username}")
         else:
-            print("⚠️ User admin đã tồn tại, bỏ qua.")
+            print("Warning:  User admin đã tồn tại, bỏ qua.")

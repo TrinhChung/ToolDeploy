@@ -24,6 +24,7 @@ from models.server import Server
 from models.deployed_app import DeployedApp
 from models.cloudflare_acc import CloudflareAccount
 from models.domain_verification import DomainVerification
+from models.web_domain_verification import WebDomainVerification
 from models.template import Template
 from models.company import Company
 from models.website import Website

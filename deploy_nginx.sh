@@ -4,14 +4,14 @@ PORT="$2"
 #!/bin/bash
 set -e
 set -o pipefail
-trap 'echo "❌ Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
+trap 'echo "Error:   Đã xảy ra lỗi tại dòng $LINENO. Dừng cài đặt."' ERR
 
 # --- Nginx ---
 if ! dpkg -s nginx &> /dev/null; then
   echo "🌐 Cài đặt Nginx..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
 else
-  echo "✅ Nginx đã được cài."
+  echo "Success:  Nginx đã được cài."
 fi
 
 # --- Git ---
@@ -19,7 +19,7 @@ if ! dpkg -s git &> /dev/null; then
   echo "🧰 Cài đặt Git..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git
 else
-  echo "✅ Git đã được cài."
+  echo "Success:  Git đã được cài."
 fi
 
 sudo ufw allow 80
@@ -30,7 +30,7 @@ if ! command -v python3 &> /dev/null; then
   echo "🐍 Cài đặt Python3..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3
 else
-  echo "✅ Python3 đã được cài."
+  echo "Success:  Python3 đã được cài."
 fi
 
 # --- Pip ---
@@ -38,14 +38,14 @@ if ! command -v pip3 &> /dev/null; then
   echo "🐍 Cài đặt PIP..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip
 else
-  echo "✅ PIP đã được cài."
+  echo "Success:  PIP đã được cài."
 fi
 
 if ! dpkg -s python3-venv &> /dev/null; then
   echo "🐍 Cài đặt Virtual env..."
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-venv
 else
-  echo "✅ Virtual env đã được cài."
+  echo "Success:  Virtual env đã được cài."
 fi
 
 # --- Node.js 18 ---
@@ -54,7 +54,7 @@ if ! command -v node &>/dev/null || [[ "$(node -v)" != v18* ]]; then
   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
 else
-  echo "✅ Node.js $(node -v) đã được cài."
+  echo "Success:  Node.js $(node -v) đã được cài."
 fi
 
 # --- Certbot cài trong myenv ---
@@ -68,14 +68,14 @@ fi
 source /home/myenv/bin/activate
 pip show certbot &>/dev/null || pip install certbot
 pip show certbot-nginx &>/dev/null || pip install certbot-nginx
-echo "✅ Certbot và certbot-nginx đã được cài trong myenv."
+echo "Success:  Certbot và certbot-nginx đã được cài trong myenv."
 
 # --- Kiểm tra ---
 echo
 echo "Kiểm tra package"
-echo "🔍 Phiên bản kiểm tra:"
-nginx -v || echo "Nginx ❌"
-certbot --version || echo "Certbot ❌"
+echo "Check:  Phiên bản kiểm tra:"
+nginx -v || echo "Nginx Error:  "
+certbot --version || echo "Certbot Error:  "
 
 echo
 echo "Tạo file cấu hình nginx"
@@ -109,8 +109,8 @@ if [ -f "$CONFIG_FILE" ]; then
   /home/myenv/bin/certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
   /home/myenv/bin/certbot renew
 else
-  echo "❌ File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
+  echo "Error:   File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
 fi
 
 deactivate
-echo "✅ Certbot đã kích hoạt"
+echo "Success:  Certbot đã kích hoạt"

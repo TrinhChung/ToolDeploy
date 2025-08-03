@@ -8,7 +8,7 @@ class CloudflareAccount(db.Model):
     api_token = db.Column(db.String(255), nullable=False)  # CLOUD_FLARE_TOKEN
     account_id = db.Column(db.String(64), nullable=True)   # CLOUDFLARE_ACCOUNT_ID
 
-    # ✅ Nameserver được dùng chung cho tất cả domain thuộc tài khoản này
+    # Success:  Nameserver được dùng chung cho tất cả domain thuộc tài khoản này
     ns1 = db.Column(db.String(255), nullable=True)
     ns2 = db.Column(db.String(255), nullable=True)
 
