@@ -14,6 +14,7 @@ class Website(db.Model):
     static_page_link = db.Column(db.Text, nullable=True)
     note = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    status = db.Column(db.String(50), default="pending")
 
     company = db.relationship("Company", back_populates="websites")
     domain = db.relationship("Domain", back_populates="websites")  # <--- thêm dòng này

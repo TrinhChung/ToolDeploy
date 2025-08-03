@@ -63,7 +63,7 @@ def setup_logging(log_dir: Optional[str] = None) -> None:
         root.addHandler(fh)
 
     # không in quá nhiều log Flask werkzeug
-    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.INFO)
 
     setup_logging._configured = True
 
