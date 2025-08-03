@@ -267,32 +267,33 @@ echo "}"
     try:
         now = datetime.utcnow()
         case_sql = "\n".join(
-            f"    WHEN :dir_{i} THEN :port_{i}"
+            f"    WHEN CONCAT(da.subdomain, '.', d.name) = :dir_{i} THEN :port_{i}"
             for i, _ in enumerate(data)
         )
         in_clause = ", ".join(f":dir_{i}" for i in range(len(data)))
 
         sql = f"""
-        UPDATE deployed_app
-        SET port = CASE subdomain
+        UPDATE deployed_app da
+        JOIN domain d ON d.id = da.domain_id
+        SET da.port = CASE   
         {case_sql}
-            ELSE port
+            ELSE da.port
         END,
-        status = CASE
-            WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN 'active'
-            WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN 'inactive'
-            ELSE status
+        da.status = CASE
+            WHEN da.status NOT IN ('active', 'add_txt') AND CONCAT(da.subdomain, '.', d.name) IN ({in_clause})  THEN 'active'
+            WHEN da.status IN ('active', 'add_txt') AND CONCAT(da.subdomain, '.', d.name) NOT IN ({in_clause})  THEN 'inactive'
+            ELSE da.status
         END,
-        activated_at = CASE
-            WHEN status NOT IN ('active', 'add_txt') AND subdomain IN ({in_clause})  THEN :now
-            ELSE activated_at
+        da.activated_at = CASE
+            WHEN da.status NOT IN ('active', 'add_txt') AND CONCAT(da.subdomain, '.', d.name) IN ({in_clause})  THEN :now
+            ELSE da.activated_at
         END,
-        deactivated_at = CASE
-            WHEN status IN ('active', 'add_txt') AND subdomain NOT IN ({in_clause})  THEN :now
-            ELSE deactivated_at
+        da.deactivated_at = CASE
+            WHEN da.status IN ('active', 'add_txt') AND CONCAT(da.subdomain, '.', d.name) NOT IN ({in_clause})  THEN :now
+            ELSE da.deactivated_at
         END,
-        sync_at = :now
-        WHERE server_id = :server_id
+        da.sync_at = :now
+        WHERE da.server_id = :server_id
         """
 
         params = {"now": now, "server_id": server_id}
