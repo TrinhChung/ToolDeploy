@@ -174,3 +174,69 @@ def view_website(website_id):
         return redirect(url_for("genweb.list_website"))
 
     return render_template("genweb/detail_website.html", w=w)
+
+
+@genweb_bp.route("/delete/<int:website_id>", methods=["POST"])
+@login_required
+def delete_website(website_id):
+    website = Website.query.get(website_id)
+    if not website:
+        flash("Không tìm thấy website!", "danger")
+        return redirect(url_for("genweb.list_website"))
+
+    # --- Lấy domain và subdomain để xóa DNS ---
+    domain = Domain.query.get(website.domain_id)
+    if not domain:
+        flash("Không tìm thấy domain!", "danger")
+        return redirect(url_for("genweb.list_website"))
+    cf_account = domain.cloudflare_account
+    zone_id = domain.zone_id
+
+    # Subdomain và tên bản ghi
+    static_link = website.static_page_link  # VD: abc.example.com
+    record_name = static_link  # nếu lưu full subdomain.domain.com
+
+    # --- Xóa record A ---
+    try:
+        a_record_id = get_record_id_by_name(zone_id, record_name, "A", cf_account)
+        if a_record_id:
+            update_dns_record(
+                zone_id,
+                a_record_id,
+                record_name,
+                "",
+                "A",
+                proxied=False,
+                cf_account=cf_account,
+                delete=True,
+            )
+    except Exception as e:
+        logger.error(f"Lỗi khi xóa record A: {e}")
+
+    # --- Xóa record TXT ---
+    try:
+        txt_record_id = get_record_id_by_name(zone_id, record_name, "TXT", cf_account)
+        if txt_record_id:
+            update_dns_record(
+                zone_id,
+                txt_record_id,
+                record_name,
+                "",
+                "TXT",
+                proxied=False,
+                cf_account=cf_account,
+                delete=True,
+            )
+    except Exception as e:
+        logger.error(f"Lỗi khi xóa record TXT: {e}")
+
+    # --- Xóa website (và company nếu muốn) ---
+    company = Company.query.get(website.company_id)
+    db.session.delete(website)
+    # Nếu muốn xóa cả công ty liên quan (cẩn thận chỉ xóa khi không còn website nào dùng chung công ty này!)
+    if company:
+        db.session.delete(company)
+    db.session.commit()
+
+    flash("✅ Đã xóa website và DNS thành công!", "success")
+    return redirect(url_for("genweb.list_website"))
