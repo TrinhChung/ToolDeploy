@@ -261,7 +261,7 @@ def list_app():
 
 @deployed_app_bp.route("/sync")
 @login_required
-def list_app():
+def sync():
     # Luôn expire session để lấy dữ liệu mới nhất từ DB (tránh cache)
     db.session.expire_all()
     servers = (
