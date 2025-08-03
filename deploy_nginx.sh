@@ -106,8 +106,8 @@ echo
 echo "Cấu hình certbot"
 if [ -f "$CONFIG_FILE" ]; then
   echo "⚙️ File cấu hình $CONFIG_FILE tồn tại, chạy Certbot..."
-  certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
-  certbot renew
+  /home/myenv/bin/certbot --nginx -d "$DNS_WEB" --non-interactive --agree-tos --email nguyenbach19122002@gmail.com
+  /home/myenv/bin/certbot renew
 else
   echo "❌ File cấu hình $CONFIG_FILE không tồn tại, bỏ qua Certbot."
 fi
