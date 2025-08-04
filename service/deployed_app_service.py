@@ -1,19 +1,112 @@
 # service/deployed_app_service.py
-
-import secrets
+import threading
+import logging
+from flask import (
+    flash,
+    current_app,
+)
 from database_init import db
 from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
-from models.domain_verification import DomainVerification
+from bash_script.remote_deploy import run_remote_deploy
 from util.cloud_flare import (
     check_dns_record_exists,
     add_dns_record,
     get_record_id_by_name,
     update_dns_record,
-    add_or_update_txt_record,
 )
-from bash_script.remote_deploy import run_remote_deploy, remote_turn_off
+
+logger = logging.getLogger("deploy_logger")
+
+
+def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns_web):
+    # Bắt mọi lỗi từ ngoài vào trong!
+    try:
+        with app.app_context():
+            logger = logging.getLogger("deploy_logger")
+            logger.info("===> Thread deploy START")
+
+            # Tạo session mới cho thread (giải pháp triệt để nhất)
+            session = (
+                db.create_scoped_session()
+                if hasattr(db, "create_scoped_session")
+                else db.session
+            )
+
+            deployed_app = session.query(DeployedApp).get(deployed_app_id)
+            server = session.query(Server).get(server_id)
+            logger.info("Đã vào background_deploy, lấy được app và server")
+
+            try:
+                log = run_remote_deploy(
+                    host=server.ip,
+                    user=server.admin_username,
+                    password=server.admin_password,
+                    input_dir=input_dir,
+                    appId=form_data["APP_ID"],
+                    appSecret=form_data["APP_SECRET"],
+                    appName=form_data["APP_NAME"],
+                    email=form_data["EMAIL"],
+                    address=form_data["ADDRESS"],
+                    phoneNumber=form_data["PHONE_NUMBER"],
+                    dnsWeb=dns_web,
+                    companyName=form_data["COMPANY_NAME"],
+                    taxNumber=form_data["TAX_NUMBER"],
+                )
+                logger.info(f"Deploy thành công: {log}")
+                deployed_app.status = "active"
+                deployed_app.log = log
+
+                if deployed_app.subdomain:
+                    domain = session.query(Domain).get(deployed_app.domain_id)
+                    cf_account = domain.cloudflare_account
+                    zone_id = domain.zone_id
+                    record_name = f"{deployed_app.subdomain}.{domain.name}"
+                    record_id = get_record_id_by_name(
+                        zone_id, record_name, "A", cf_account=cf_account
+                    )
+                    if record_id:
+                        try:
+                            update_dns_record(
+                                zone_id=zone_id,
+                                record_id=record_id,
+                                record_name=record_name,
+                                record_content=server.ip,
+                                record_type="A",
+                                proxied=True,
+                                cf_account=cf_account,
+                            )
+                            logger.info(f"Đã cập nhật proxied=True cho {record_name}")
+                        except Exception as e:
+                            logger.error(f"Lỗi khi cập nhật proxied: {e}")
+
+            except Exception as e:
+                deployed_app.status = "failed"
+                deployed_app.log = str(e)
+                logger.error(f"Deploy lỗi: {str(e)}")
+            finally:
+                session.commit()
+                session.refresh(deployed_app)
+                session.close()
+                logger.info(
+                    f"App {deployed_app.id} đã được cập nhật trạng thái: {deployed_app.status}"
+                )
+    except Exception as e:
+        # Print ra file riêng nếu logger chưa hoạt động!
+        with open("/tmp/deploy_thread_fatal.log", "a") as f:
+            f.write(f"Lỗi to nhất ở ngoài thread: {e}\n")
+        import traceback
+
+        traceback.print_exc()
+
+
+def fill_default_env(form):
+    form.EMAIL.data = "nguyenlieuxmdn@gmail.com"
+    form.ADDRESS.data = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam"
+    form.PHONE_NUMBER.data = "07084773586"
+    form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
+    form.TAX_NUMBER.data = "0318728792"
 
 
 def build_env_text(form, dns_web, app_secret):
@@ -47,11 +140,11 @@ def create_deployed_app(form, dns_web, env_text):
     return deployed_app
 
 
-def create_dns_record_if_needed(subdomain, domain, server, logger, flash):
+def create_dns_record_if_needed(subdomain, domain_name, domain, server):
     if not subdomain:
         return True
     cf_account = domain.cloudflare_account
-    record_name = f"{subdomain}.{domain.name}"
+    record_name = f"{subdomain}.{domain_name}"
     try:
         exists = check_dns_record_exists(
             zone_id=domain.zone_id, subdns=record_name, cf_account=cf_account
@@ -77,36 +170,28 @@ def create_dns_record_if_needed(subdomain, domain, server, logger, flash):
         return False
 
 
-def add_or_update_domain_verification(app, txt_value):
-    verification = DomainVerification.query.filter_by(deployed_app_id=app.id).first()
-    if verification:
-        verification.txt_value = txt_value
-        verification.create_count += 1
-    else:
-        verification = DomainVerification(
-            deployed_app_id=app.id,
-            txt_value=txt_value,
-            create_count=1,
-        )
-        db.session.add(verification)
-    app.status = "add_txt"
-    db.session.commit()
-    db.session.refresh(app)
-    db.session.expire_all()
-    return verification
-
-
-def stop_app_and_update(app, server, logger):
-    out = remote_turn_off(
-        host=server.ip,
-        user=server.admin_username,
-        password=server.admin_password,
-        subdomain=app.subdomain,
+def start_background_deploy(deployed_app, form, server, dns_web):
+    input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
+    form_data = {
+        "APP_ID": form.APP_ID.data,
+        "APP_SECRET": form.APP_SECRET.data,
+        "APP_NAME": form.APP_NAME.data,
+        "EMAIL": form.EMAIL.data,
+        "ADDRESS": form.ADDRESS.data,
+        "PHONE_NUMBER": form.PHONE_NUMBER.data,
+        "COMPANY_NAME": form.COMPANY_NAME.data,
+        "TAX_NUMBER": form.TAX_NUMBER.data,
+    }
+    thread = threading.Thread(
+        target=background_deploy,
+        args=(
+            current_app._get_current_object(),
+            deployed_app.id,
+            server.id,
+            form_data,
+            input_dir,
+            dns_web,
+        ),
+        daemon=True,
     )
-    app.status = "inactive"
-    app.log = out
-    logger.info(f"Tắt app thành công:\n{out}")
-    db.session.commit()
-    db.session.refresh(app)
-    db.session.expire_all()
-    return out
+    thread.start()
