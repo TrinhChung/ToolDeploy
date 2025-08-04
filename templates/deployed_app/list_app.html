@@ -78,7 +78,8 @@
 						{% endif %}
 					</td>
 					{% endif %}
-					<td>
+					<!-- BỔ SUNG data-status -->
+					<td data-status="{{ app.status }}">
 						{% if app.status == 'active' %}
 						<span class="badge bg-success">Đang chạy</span>
 						{% elif app.status == 'pending' %}
@@ -317,7 +318,7 @@
 	});
 
 	// ==== Phân trang + Tìm kiếm + Filter trạng thái ====
-	const rowsPerPage = 10;
+	const rowsPerPage = 30;
 	let currentPage = 1;
 
 	function normalize(str) {
@@ -335,7 +336,9 @@
 			let text = row.innerText;
 			let normalized = normalize(text);
 			let matchesSearch = !search || normalized.includes(search);
-			let matchesStatus = !status || row.innerHTML.includes('badge') && row.innerHTML.includes(status);
+			// ----- Sửa lại filter status -----
+			let statusTd = row.querySelector('td[data-status]');
+			let matchesStatus = !status || (statusTd && statusTd.getAttribute('data-status') === status);
 			row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
 			if (matchesSearch && matchesStatus) visibleRows.push(row);
 		});
