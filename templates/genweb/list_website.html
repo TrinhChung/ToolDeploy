@@ -25,11 +25,11 @@
     </thead>
     <tbody>
         {% for website_id, company_name, static_page_link, server_name, server_ip in websites %}
-        <td style="padding: 10px; text-align: center; color: #888; font-weight: 600;">
-            {{ loop.index }}
-        </td>
         <tr style="transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'"
             onmouseout="this.style.background='white'">
+            <td style="padding: 10px; text-align: center; color: #888; font-weight: 600;">
+                {{ loop.index }}
+            </td>
             <td style="padding: 10px;">{{ company_name }}</td>
             <td style="padding: 10px;">
                 {% if static_page_link %}
@@ -45,11 +45,12 @@
                 {{ server_name }}
             </td>
             <td style="padding: 10px;">
-                <a href="{{ url_for('genweb.view_website', website_id=website_id) }}" class="btn btn-sm btn-outline-primary">
+                <a href="{{ url_for('genweb.view_website', website_id=website_id) }}"
+                    class="btn btn-sm btn-outline-primary">
                     Xem chi tiết
                 </a>
-                <form action="{{ url_for('genweb.delete_website', website_id=website_id) }}" method="post" style="display:inline"
-                    onsubmit="return confirm('Bạn chắc chắn muốn xóa website này?');">
+                <form action="{{ url_for('genweb.delete_website', website_id=website_id) }}" method="post"
+                    style="display:inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa website này?');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
                 </form>
