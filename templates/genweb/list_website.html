@@ -16,6 +16,7 @@
     box-shadow: 0 2px 8px #0001;">
     <thead>
         <tr style="background: #f2f2f2;">
+            <th style="padding: 10px; border-bottom: 2px solid #eee; width: 48px;">STT</th>
             <th style="padding: 10px; border-bottom: 2px solid #eee;">Công ty</th>
             <th style="padding: 10px; border-bottom: 2px solid #eee;">Link tĩnh</th>
             <th style="padding: 10px; border-bottom: 2px solid #eee;">Server</th>
@@ -24,6 +25,9 @@
     </thead>
     <tbody>
         {% for website_id, company_name, static_page_link, server_name, server_ip in websites %}
+        <td style="padding: 10px; text-align: center; color: #888; font-weight: 600;">
+            {{ loop.index }}
+        </td>
         <tr style="transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'"
             onmouseout="this.style.background='white'">
             <td style="padding: 10px;">{{ company_name }}</td>
