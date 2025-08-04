@@ -16,6 +16,7 @@ from util.cloud_flare import (
     get_record_id_by_name,
     update_dns_record,
 )
+from util.constant import DEPLOYED_APP_STATUS
 
 logger = logging.getLogger("deploy_logger")
 
@@ -55,7 +56,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                     taxNumber=form_data["TAX_NUMBER"],
                 )
                 logger.info(f"Deploy thành công: {log}")
-                deployed_app.status = "active"
+                deployed_app.status = DEPLOYED_APP_STATUS.active.value
                 deployed_app.log = log
 
                 if deployed_app.subdomain:
@@ -82,7 +83,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                             logger.error(f"Lỗi khi cập nhật proxied: {e}")
 
             except Exception as e:
-                deployed_app.status = "failed"
+                deployed_app.status = DEPLOYED_APP_STATUS.failed.value
                 deployed_app.log = str(e)
                 logger.error(f"Deploy lỗi: {str(e)}")
             finally:
@@ -132,7 +133,7 @@ def create_deployed_app(form, dns_web, env_text):
         subdomain=subdomain,
         env=env_text,
         note=form.note.data,
-        status="deploying",
+        status= DEPLOYED_APP_STATUS.deploying.value,
     )
     db.session.add(deployed_app)
     db.session.commit()

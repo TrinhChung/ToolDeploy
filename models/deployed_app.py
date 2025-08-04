@@ -1,6 +1,6 @@
 from database_init import db
 from datetime import datetime
-
+from util.constant import DEPLOYED_APP_STATUS
 
 class DeployedApp(db.Model):
     __tablename__ = "deployed_app"
@@ -10,7 +10,9 @@ class DeployedApp(db.Model):
     subdomain = db.Column(db.String(255), nullable=True)  # subdomain/app.example.com
     env = db.Column(db.Text)  # lưu biến ENV dạng text hoặc JSON
     port = db.Column(db.Integer, nullable=True)
-    status = db.Column(db.String(50), default="pending")  # pending/active/failed...
+    status = db.Column(
+        db.String(50), default=DEPLOYED_APP_STATUS.deploying.value
+    ) 
     note = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(

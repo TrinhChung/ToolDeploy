@@ -8,7 +8,7 @@ class Domain(db.Model):
     zone_id = db.Column(db.String(255), nullable=True)  # Cloudflare Zone ID
     status = db.Column(
         db.String(50), default="pending", nullable=False
-    )  # active/pending...
+    ) 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     user = db.relationship("User", back_populates="domains")
     dns_records = db.relationship("DNSRecord", back_populates="domain", lazy=True)

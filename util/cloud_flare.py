@@ -4,7 +4,7 @@ from models.domain import Domain
 from models.dns_record import DNSRecord
 from models.cloudflare_acc import CloudflareAccount
 from flask_login import current_user
-
+from util.constant import DEPLOYED_APP_STATUS
 # ========== GUARD & UTILS ==========
 
 def _admin_guard():
@@ -42,7 +42,7 @@ def sync_domains_from_cf_with_account(cf_account):
     for domain in domains_data:
         domain_name = domain["name"].strip().lower()
         zone_id = domain["id"]
-        status = domain.get("status", "pending")
+        status = domain.get("status", DEPLOYED_APP_STATUS.pending.value)
         existing_domain = Domain.query.filter_by(name=domain_name).first()
         if existing_domain:
             existing_domain.zone_id = zone_id

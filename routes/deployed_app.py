@@ -25,7 +25,7 @@ from service.deployed_app_service import (
     create_dns_record_if_needed
 )
 from models.domain_verification import DomainVerification
-
+from util.constant import DEPLOYED_APP_STATUS
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 logger = logging.getLogger("deploy_logger")
 
@@ -71,16 +71,31 @@ def deploy_app():
 @deployed_app_bp.route("/list")
 @login_required
 def list_app():
-    # Luôn expire session để lấy dữ liệu mới nhất từ DB (tránh cache)
     db.session.expire_all()
     deployed_apps = (
         db.session.query(DeployedApp, Server, Domain)
         .join(Server, DeployedApp.server_id == Server.id)
         .join(Domain, DeployedApp.domain_id == Domain.id)
-        .order_by(DeployedApp.created_at.desc())
+        .order_by(DeployedApp.created_at.desc())  # để phụ sort created_at
         .all()
     )
+
+    # Soft lại theo status ưu tiên (order) trong Enum
+    def get_status_order(app_tuple):
+        app = app_tuple[0]  # vì mỗi phần tử là (DeployedApp, Server, Domain)
+        try:
+            return DEPLOYED_APP_STATUS[app.status].order
+        except KeyError:
+            return 999  # status lạ cho xuống cuối
+
+    # Có thể phụ thêm sort theo thời gian nếu cùng trạng thái
+    deployed_apps = sorted(
+        deployed_apps,
+        key=lambda tup: (get_status_order(tup), -tup[0].created_at.timestamp()),
+    )
+
     return render_template("deployed_app/list_app.html", deployed_apps=deployed_apps)
+
 
 @deployed_app_bp.route("/sync")
 @login_required
@@ -162,11 +177,11 @@ def stop_app(app_id):
             password=server.admin_password,
             subdomain=app.subdomain,
         )
-        app.status = "inactive"
+        app.status = DEPLOYED_APP_STATUS.inactive.value
         app.log = out
         logger.info(f"Tắt app thành công:\n{out}")
     except Exception as e:
-        app.status = "failed"
+        app.status = DEPLOYED_APP_STATUS.failed.value
         app.log = str(e)
         logger.error(f"Lỗi dừng app:\n{str(e)}")
     finally:
