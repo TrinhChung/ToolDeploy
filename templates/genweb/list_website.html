@@ -11,7 +11,13 @@
     </a>
 </div>
 
-<table style="
+<!-- Thanh tìm kiếm -->
+<div style="margin-bottom: 14px;">
+    <input id="searchInput" class="form-control" style="max-width: 300px;" type="text"
+        placeholder="Tìm kiếm tên công ty, link, server..." autocomplete="off">
+</div>
+
+<table id="websiteTable" style="
     width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden;
     box-shadow: 0 2px 8px #0001;">
     <thead>
@@ -59,4 +65,74 @@
         {% endfor %}
     </tbody>
 </table>
+<!-- Nơi hiện phân trang -->
+<div id="pagination"></div>
+
+<script>
+    const rowsPerPage = 30;
+    let currentPage = 1;
+
+    function normalize(str) {
+        return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function filterRows() {
+        const search = normalize(document.getElementById('searchInput').value.trim());
+        const table = document.getElementById('websiteTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        let visibleRows = [];
+
+        rows.forEach(row => {
+            let text = row.innerText;
+            let normalized = normalize(text);
+            let matchesSearch = !search || normalized.includes(search);
+            row.style.display = matchesSearch ? '' : 'none';
+            if (matchesSearch) visibleRows.push(row);
+        });
+        return visibleRows;
+    }
+
+    function paginateRows(visibleRows) {
+        let totalPages = Math.ceil(visibleRows.length / rowsPerPage);
+        currentPage = Math.min(currentPage, totalPages) || 1;
+        visibleRows.forEach((row, idx) => {
+            row.style.display = (idx >= (currentPage - 1) * rowsPerPage && idx < currentPage * rowsPerPage) ? '' : 'none';
+            // Số thứ tự lại
+            let sttCell = row.querySelector('td');
+            if (sttCell) sttCell.innerText = ((currentPage - 1) * rowsPerPage + idx % rowsPerPage + 1);
+        });
+        createPagination(totalPages);
+    }
+
+    function createPagination(totalPages) {
+        let pagination = document.getElementById('pagination');
+        let html = '';
+        if (totalPages > 1) {
+            html += `<ul class="pagination mb-0" style="justify-content:center;">`;
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<li class="page-item${i === currentPage ? ' active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>`;
+            }
+            html += `</ul>`;
+        }
+        pagination.innerHTML = html;
+
+        Array.from(pagination.querySelectorAll('a.page-link')).forEach(a => {
+            a.onclick = function (e) {
+                e.preventDefault();
+                currentPage = parseInt(this.dataset.page);
+                paginateRows(filterRows());
+                return false;
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', () => paginateRows(filterRows()));
+        paginateRows(filterRows());
+    });
+</script>
 {% endblock %}
