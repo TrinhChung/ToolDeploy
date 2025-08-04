@@ -35,9 +35,12 @@
 							class="text-secondary">{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
 				</div>
 				<!-- Tên miền -->
+				{% set full_domain = (app.subdomain ~ '.' if app.subdomain else '') ~ domain.name %}
+				
+				<!-- Tên miền -->
 				<div class="mb-2 d-flex align-items-center gap-2">
 					<strong>Tên miền:</strong>
-					<span class="text-secondary" id="domainText">{{ app.domain if app.domain else domain.name }}</span>
+					<span class="text-secondary" id="domainText">{{ full_domain }}</span>
 					<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('domainText', this)">
 						<i class="fa fa-copy"></i>
 					</button>
