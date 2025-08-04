@@ -49,11 +49,11 @@ def create_app():
     def inject_common_env():
         return dict(
             app_name=os.getenv("APP_NAME", "TOOL DEPLOY"),
-            contact_email=os.getenv("EMAIL", "chungtrinh2k2@gmail.com"),
+            contact_email=os.getenv("EMAIL", "nguyenlieuxmdn@gmail.com"),
             address=os.getenv(
                 "ADDRESS", "147 Thái Phiên, Phường 9,Quận 11, TP.HCM, Việt Nam"
             ),
-            dns_web=os.getenv("DNS_WEB", "smartrent.id.vn"),
+            dns_web=os.getenv("DNS_WEB", "https://www.facebook.com/khangxl2024/"),
             tax_number=os.getenv("TAX_NUMBER", "0318728792"),
             phone_number=os.getenv("PHONE_NUMBER", "07084773484"),
         )
@@ -94,7 +94,6 @@ def create_app():
     from routes.company import company_bp
     from routes.getweb import genweb_bp
     from routes.api import api_bp
-    
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)

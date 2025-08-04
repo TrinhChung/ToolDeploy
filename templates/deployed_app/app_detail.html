@@ -34,6 +34,40 @@
 					<div class="mb-2"><strong>Ngày tạo:</strong> <span
 							class="text-secondary">{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
 				</div>
+				<!-- Tên miền -->
+				<div class="mb-2 d-flex align-items-center gap-2">
+					<strong>Tên miền:</strong>
+					<span class="text-secondary" id="domainText">{{ app.domain if app.domain else domain.name }}</span>
+					<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('domainText', this)">
+						<i class="fa fa-copy"></i>
+					</button>
+				</div>
+				
+				<!-- URL chính sách quyền riêng tư -->
+				<div class="mb-2 d-flex align-items-center gap-2">
+					<strong>URL chính sách quyền riêng tư:</strong>
+					{% set policy_url = 'https://' ~ (app.subdomain or '') ~ '.' ~ domain.name ~ '/polices' %}
+					<span class="text-secondary" id="policyUrlText">{{ policy_url }}</span>
+					<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('policyUrlText', this)">
+						<i class="fa fa-copy"></i>
+					</button>
+				</div>
+				
+				<!-- Mô tả sử dụng Dữ liệu nền tảng -->
+				<div class="mb-2 d-flex align-items-center gap-2">
+					<strong>Mô tả sử dụng Dữ liệu nền tảng:</strong>
+					<span class="text-secondary" id="descText">
+						Doanh nghiệp chúng tôi sử dụng Dữ liệu trên nền tảng để giúp khách hàng quản lý quảng cáo và các bài đăng trên các
+						kênh mạng xã hội hoặc trang web. Khách hàng cung cấp thông tin về các chiến dịch quảng cáo, bài đăng hoặc yêu cầu
+						quảng cáo riêng. Chúng tôi dùng dữ liệu này để tạo, quản lý và theo dõi các chiến dịch quảng cáo theo ý muốn của
+						khách hàng. Khách hàng sẽ sử dụng dịch vụ để xem, chỉnh sửa, theo dõi hiệu quả các chiến dịch và bài đăng của mình
+						một cách dễ dàng và thuận tiện. Chúng tôi chỉ sử dụng Dữ liệu trên nền tảng để phục vụ cho việc quản lý quảng cáo
+						cho khách hàng và không dùng cho mục đích khác.
+					</span>
+					<button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('descText', this)">
+						<i class="fa fa-copy"></i>
+					</button>
+				</div>
 				<div class="col-md-6">
 					<div class="mb-2"><strong>ENV:</strong>
 						<pre class="bg-light p-2 rounded border" style="font-size:0.97em; min-height:64px;">{{ app.env or '-' }}
@@ -94,4 +128,20 @@
 		}
 	}
 </style>
+<!-- Script copy cho nút -->
+<script>
+	function copyToClipboard(elementId, btn) {
+		var text = document.getElementById(elementId).innerText || '';
+		navigator.clipboard.writeText(text).then(function () {
+			btn.classList.remove('btn-outline-secondary');
+			btn.classList.add('btn-success');
+			btn.innerHTML = '<i class="fa fa-check"></i>';
+			setTimeout(function () {
+				btn.classList.add('btn-outline-secondary');
+				btn.classList.remove('btn-success');
+				btn.innerHTML = '<i class="fa fa-copy"></i>';
+			}, 1200);
+		});
+	}
+</script>
 {% endblock %}

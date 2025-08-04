@@ -32,7 +32,7 @@ logger = logging.getLogger("deploy_logger")
 
 import logging
 from database_init import db
-  # đảm bảo có Session = scoped_session(sessionmaker(bind=engine))
+# đảm bảo có Session = scoped_session(sessionmaker(bind=engine))
 
 
 def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns_web):
@@ -117,7 +117,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
 
 
 def fill_default_env(form):
-    form.EMAIL.data = "chungtrinh2k2@gmail.com"
+    form.EMAIL.data = "nguyenlieuxmdn@gmail.com"
     form.ADDRESS.data = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam"
     form.PHONE_NUMBER.data = "07084773586"
     form.COMPANY_NAME.data = "CÔNG TY TNHH NOIR STEED"
