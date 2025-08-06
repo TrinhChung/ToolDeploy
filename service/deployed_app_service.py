@@ -38,7 +38,23 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             deployed_app = session.query(DeployedApp).get(deployed_app_id)
             server = session.query(Server).get(server_id)
             logger.info("Đã vào background_deploy, lấy được app và server")
-
+            selectedPort = 5000
+            used_ports = (
+                DeployedApp.query
+                .with_entities(DeployedApp.port)
+                .filter(DeployedApp.port != None)
+                .order_by(DeployedApp.port.asc())
+                .all()
+            )
+            length = len(used_ports)
+            if length > 0 and used_ports[0][0] == selectedPort:
+                if (used_ports[-1][0] - used_ports[0][0]) + 1 == length:
+                    selectedPort = used_ports[-1][0] + 1
+                else:
+                    for i in range(1, length):
+                        if used_ports[i][0] - used_ports[i-1][0] > 1:
+                            selectedPort = used_ports[i-1][0] + 1
+                            break
             try:
                 log = run_remote_deploy(
                     host=server.ip,
@@ -54,7 +70,9 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                     dnsWeb=dns_web,
                     companyName=form_data["COMPANY_NAME"],
                     taxNumber=form_data["TAX_NUMBER"],
+                    port=selectedPort
                 )
+                logger.info(f"Chọn port {selectedPort}")
                 logger.info(f"Deploy thành công: {log}")
                 deployed_app.status = DEPLOYED_APP_STATUS.active.value
                 deployed_app.log = log

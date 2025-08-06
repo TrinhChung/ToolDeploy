@@ -94,17 +94,18 @@ def _connect_ssh(host: str, user: str, password: str) -> paramiko.SSHClient:
 def remote_turn_on(
     host: str, user: str, *,
     password: str,
-    subdomain: str,
+    fullDomain: str,
     port: int | str = 5000,
 ) -> str:
-    """Khởi động Flask app (flask run) trong /home/<subdomain>."""
+    """Khởi động Flask app (flask run) trong /home/<domain>."""
     ssh = _connect_ssh(host, user, password)
 
     cmd = rf"""
-        FOLDER="/home/{subdomain}";
+        FOLDER="/home/{fullDomain}";
         cd "$FOLDER";
-        nohup bash -c 'stdbuf -oL -eL flask run --host=0.0.0.0 --port {port} \
-            2>&1 | ts "[%Y-%m-%d %H:%M:%S]"' >> flask.log & echo $!
+        source /home/myenv/bin/activate
+        pm2 start "flask run --host=0.0.0.0 --port={port}" --name="{fullDomain}"
+        source /home/myenv/bin/deactivate
     """
     stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
 
@@ -121,22 +122,12 @@ def remote_turn_on(
 def remote_turn_off(
     host: str, user: str, *,
     password: str,
-    subdomain: str,
+    fullDomain: str,
 ) -> str:
     """Tắt các tiến trình flask run đúng thư mục đó."""
     ssh = _connect_ssh(host, user, password)
 
-    cmd = rf"""
-        FOLDER="/home/{subdomain}";
-        for pid in $(pgrep -f "flask run"); do
-            pwd_env=$(tr '\0' '\n' < /proc/$pid/environ 2>/dev/null |
-                      grep '^PWD=' | cut -d= -f2);
-            if [ "$pwd_env" = "$FOLDER" ]; then
-                echo "Killing PID $pid in $FOLDER";
-                kill $pid;
-            fi;
-        done
-    """
+    cmd = f"pm2 delete {fullDomain}"
     stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
 
     out, err = stdout.read().decode(), stderr.read().decode()
@@ -156,7 +147,7 @@ def run_remote_deploy(
     appId: str, appSecret: str,
     appName: str, email: str,
     address: str, phoneNumber: str,
-    dnsWeb: str, companyName: str, taxNumber: str,
+    dnsWeb: str, companyName: str, taxNumber: str, port: int,
     local_script_path: str = "./init.sh",
     remote_path: str = "/home/init.sh",
     max_runtime: int = 1800,     # tổng thời gian (s)
@@ -167,6 +158,7 @@ def run_remote_deploy(
     Thành công khi exit code = 0, ngược lại raise RuntimeError/TimeoutError.
     """
     logger.info("===> Thread deploy START")
+    logger.info(f"Deploy tại port {port}")
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     remote_path = remote_path.format(user=user)  # phòng trường hợp dùng {user}
@@ -184,7 +176,7 @@ def run_remote_deploy(
     f"bash -c 'mkdir -p /home/log && chmod +x {remote_path} && "
     f"{remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "
     f"\"{appName}\" {email} \"{address}\" {phoneNumber} "
-    f"\"{companyName}\" {taxNumber} 2>&1 | ts \"[%Y-%m-%d %H:%M:%S]\" "
+    f"\"{companyName}\" {taxNumber} {port} 2>&1 | ts \"[%Y-%m-%d %H:%M:%S]\" "
     f">> {log_file}'"
     )
 

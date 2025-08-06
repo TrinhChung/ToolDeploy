@@ -14,18 +14,10 @@ ADDRESS="$7"
 PHONE_NUMBER="$8"
 COMPANY_NAME="$9"
 TAX_NUMBER="${10}"
+NEW_PORT="${11}"
 TARGET_DIR="/home/$DNS_WEB"
 
-# ---------- Hàm tìm cổng trống ----------
-find_free_port() {
-  local base=${1:-5000}
-  local port=$base
-  while ss -lnt sport = :$port 2>/dev/null | grep -q LISTEN; do
-    port=$((port + 1))
-  done
-  echo "$port"
-}
-
+echo "Chọn port $NEW_PORT"
 echo "Cập nhật gói và cài ca-certificates, curl, gnupg, lsb-release..."
 sudo DEBIAN_FRONTEND=noninteractive apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg lsb-release
@@ -141,25 +133,7 @@ else
   echo "Success:  Thư mục đã tồn tại, bỏ qua git clone."
 fi
 
-# --- xử lý port ---
-echo
-echo "Chọn cổng cho ứng dụng Flask"
 cd "$TARGET_DIR" || { echo "Thư mục không tồn tại!"; exit 1; }
-
-PORT_FILE="$TARGET_DIR/port.conf"
-if [[ -f "$PORT_FILE" ]]; then
-  NEW_PORT=$(cat "$PORT_FILE")
-  echo "Đọc lại cổng đã lưu: $NEW_PORT"
-else
-  NEW_PORT=$(find_free_port 5000)
-  echo "$NEW_PORT" > "$PORT_FILE"
-  echo "Lưu cổng $NEW_PORT vào $PORT_FILE"
-fi
-
-if [ -z "$NEW_PORT" ]; then
-  echo "Error:   Không tìm được port phù hợp!"
-  exit 1
-fi
 
 echo
 echo "Nhập thông tin env"

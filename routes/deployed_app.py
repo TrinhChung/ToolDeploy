@@ -170,12 +170,13 @@ def stop_app(app_id):
     try:
         app = DeployedApp.query.get_or_404(app_id)
         server = app.server
+        domain = app.domain
         flash(f"Đã gửi yêu cầu dừng app #{app_id}", "warning")
         out = remote_turn_off(
             host=server.ip,
             user=server.admin_username,
             password=server.admin_password,
-            subdomain=app.subdomain,
+            fullDomain=f"{app.subdomain}.{domain.name}",
         )
         app.status = DEPLOYED_APP_STATUS.inactive.value
         app.log = out
