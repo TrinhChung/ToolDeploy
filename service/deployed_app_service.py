@@ -55,6 +55,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                         if used_ports[i][0] - used_ports[i-1][0] > 1:
                             selectedPort = used_ports[i-1][0] + 1
                             break
+            print(f"Chọn port {selectedPort}")
             try:
                 log = run_remote_deploy(
                     host=server.ip,
@@ -72,7 +73,6 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                     taxNumber=form_data["TAX_NUMBER"],
                     port=selectedPort
                 )
-                logger.info(f"Chọn port {selectedPort}")
                 logger.info(f"Deploy thành công: {log}")
                 deployed_app.status = DEPLOYED_APP_STATUS.active.value
                 deployed_app.log = log

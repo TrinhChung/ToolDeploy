@@ -158,7 +158,7 @@ def run_remote_deploy(
     Thành công khi exit code = 0, ngược lại raise RuntimeError/TimeoutError.
     """
     logger.info("===> Thread deploy START")
-    logger.info(f"Deploy tại port {port}")
+    print(f"Deploy tại port {port}")
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     remote_path = remote_path.format(user=user)  # phòng trường hợp dùng {user}
