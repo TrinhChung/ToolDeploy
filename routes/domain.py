@@ -6,7 +6,7 @@ from database_init import db
 from models.domain import Domain
 from models.cloudflare_acc import CloudflareAccount
 from Form.domain_form import DomainForm  # form chỉ cho admin
-from util.cloud_flare import create_cloudflare_zone
+from util.cloud_flare import create_cloudflare_zone, get_domain_nameservers
 
 class DummyDeleteForm(FlaskForm):
     pass
@@ -80,12 +80,9 @@ def add_domain():
 @login_required
 def verify_domain(domain_id):
     domain = Domain.query.get_or_404(domain_id)
-    nameservers = []
-    if domain.cloudflare_account:
-        # Lấy nameserver từ account nếu có
-        nameservers = [domain.cloudflare_account.ns1, domain.cloudflare_account.ns2]
-    else:
-        # fallback mặc định
+    nameservers = get_domain_nameservers(domain)
+    if not nameservers:
+        # fallback mặc định khi không có tài khoản Cloudflare
         nameservers = ["hank.ns.cloudflare.com", "karsyn.ns.cloudflare.com"]
 
     # Nameserver mặc định ở VN (ví dụ Tenten, có thể đổi lấy từ DB nếu muốn)
