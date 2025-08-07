@@ -55,28 +55,20 @@ def create_website_from_form(form, company_id, user_id):
     return website
 
 
-@genweb_bp.route("/list")
-@login_required
-def list_website():
-    db.session.expire_all()
-    if hasattr(current_user, "is_admin") and current_user.is_admin:
-        websites = get_websites_list()
-    else:
-        websites = (
-            db.session.query(
-                Website.id,
-                Company.name.label("company_name"),
-                Website.static_page_link.label("static_page_link"),
-                Server.name.label("server_name"),
-                Server.ip.label("server_ip"),
-            )
-            .join(Company, Website.company_id == Company.id)
-            .join(Server, Website.server_id == Server.id)
-            .filter(Website.user_id == current_user.id)
-            .order_by(Website.id.desc())
-            .all()
+def get_websites_list():
+    return (
+        db.session.query(
+            Website.id,
+            Company.name.label("company_name"),
+            Website.static_page_link.label("static_page_link"),
+            Server.name.label("server_name"),
+            Server.ip.label("server_ip"),
         )
-    return render_template("genweb/list_website.html", websites=websites)
+        .join(Company, Website.company_id == Company.id)
+        .join(Server, Website.server_id == Server.id)
+        .order_by(Website.id.desc())
+        .all()
+    )
 
 
 def get_website_detail(website_id):

@@ -139,12 +139,24 @@ def create_website():
 def list_website():
     db.session.expire_all()
     if hasattr(current_user, "is_admin") and current_user.is_admin:
-        # Admin: lấy tất cả website
         websites = get_websites_list()
     else:
-        # User thường: chỉ lấy website do mình tạo (giả sử field Website.user_id)
-        websites = Website.query.filter_by(user_id=current_user.id).all()
+        websites = (
+            db.session.query(
+                Website.id,
+                Company.name.label("company_name"),
+                Website.static_page_link.label("static_page_link"),
+                Server.name.label("server_name"),
+                Server.ip.label("server_ip"),
+            )
+            .join(Company, Website.company_id == Company.id)
+            .join(Server, Website.server_id == Server.id)
+            .filter(Website.user_id == current_user.id)
+            .order_by(Website.id.desc())
+            .all()
+        )
     return render_template("genweb/list_website.html", websites=websites)
+
 
 @genweb_bp.route("/detail/<int:website_id>", methods=["GET", "POST"])
 @login_required
