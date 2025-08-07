@@ -138,9 +138,13 @@ def create_website():
 @login_required
 def list_website():
     db.session.expire_all()
-    websites = get_websites_list()
+    if hasattr(current_user, "is_admin") and current_user.is_admin:
+        # Admin: lấy tất cả website
+        websites = get_websites_list()
+    else:
+        # User thường: chỉ lấy website do mình tạo (giả sử field Website.user_id)
+        websites = Website.query.filter_by(user_id=current_user.id).all()
     return render_template("genweb/list_website.html", websites=websites)
-
 
 @genweb_bp.route("/detail/<int:website_id>", methods=["GET", "POST"])
 @login_required
@@ -149,6 +153,14 @@ def view_website(website_id):
     if not website:
         flash("Website không tồn tại!", "danger")
         return redirect(url_for("genweb.list_website"))
+
+    # ===== Kiểm tra quyền truy cập =====
+    if not (hasattr(current_user, "is_admin") and current_user.is_admin):
+        # User thường chỉ được truy cập website mình tạo
+        if website.user_id != current_user.id:
+            flash("Bạn không có quyền truy cập website này!", "danger")
+            return redirect(url_for("genweb.list_website"))
+    # ===== END kiểm tra quyền =====
 
     # Xử lý cập nhật TXT riêng biệt với cập nhật công ty
     if request.method == "POST":
@@ -220,6 +232,13 @@ def delete_website(website_id):
     if not website:
         flash("Không tìm thấy website!", "danger")
         return redirect(url_for("genweb.list_website"))
+
+    # --- PHÂN QUYỀN XÓA ---
+    if not (hasattr(current_user, "is_admin") and current_user.is_admin):
+        # User thường chỉ xóa được website do chính mình tạo
+        if website.user_id != current_user.id:
+            flash("Bạn không có quyền xóa website này!", "danger")
+            return redirect(url_for("genweb.list_website"))
 
     # --- Xóa các bản ghi phụ thuộc ---
     WebDomainVerification.query.filter_by(website_id=website.id).delete()
