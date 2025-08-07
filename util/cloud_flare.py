@@ -83,6 +83,29 @@ def get_cloudflare_nameservers(zone_id, cf_account):
         return data["result"]["name_servers"]
     return None
 
+
+def get_domain_nameservers(domain):
+    """Fetch nameservers for a domain via Cloudflare API.
+
+    Falls back to ns1/ns2 stored in the associated CloudflareAccount when
+    the API does not return nameservers or an error occurs. Returns None if
+    the domain has no Cloudflare account.
+    """
+    cf_account = domain.cloudflare_account
+    if not cf_account:
+        return None
+
+    default_ns = [cf_account.ns1, cf_account.ns2]
+
+    if not domain.zone_id:
+        return default_ns
+
+    try:
+        api_ns = get_cloudflare_nameservers(domain.zone_id, cf_account)
+        return api_ns or default_ns
+    except Exception:
+        return default_ns
+
 # ========== DNS RECORD ==========
 
 def sync_dns_records_for_domain(domain_obj, cf_account):
