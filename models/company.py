@@ -16,7 +16,12 @@ class Company(db.Model):
     note = db.Column(db.Text, nullable=True)                         # Trường ghi chú mở rộng
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', back_populates='companies')
-     
+
+    # Trường mới
+    organization_no = db.Column(db.String(100), nullable=True)  # Mã tổ chức
+    approval_date = db.Column(db.String(50), nullable=True)  # Ngày phê duyệt
+    expiry_date = db.Column(db.String(50), nullable=True)  # Ngày hết hạn
+
     # Liên kết tới các website (1-n)
     websites = db.relationship('Website', back_populates='company')
 
