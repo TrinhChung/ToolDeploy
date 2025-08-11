@@ -1,5 +1,5 @@
 import requests
-import datetime
+from datetime import datetime
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 import random

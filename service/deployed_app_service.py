@@ -38,7 +38,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             deployed_app = session.query(DeployedApp).get(deployed_app_id)
             server = session.query(Server).get(server_id)
             logger.info("Đã vào background_deploy, lấy được app và server")
-            selectedPort = 5000
+            selectedPort = 6000
             used_ports = (
                 DeployedApp.query
                 .with_entities(DeployedApp.port)
@@ -47,7 +47,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
                 .all()
             )
             length = len(used_ports)
-            if length > 0 and used_ports[0][0] == selectedPort:
+            if length > 0:
                 if (used_ports[-1][0] - used_ports[0][0]) + 1 == length:
                     selectedPort = used_ports[-1][0] + 1
                 else:
