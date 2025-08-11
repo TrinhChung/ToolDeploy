@@ -5,6 +5,7 @@ from flask import (
     flash,
     current_app,
 )
+from sqlalchemy import and_
 from database_init import db
 from models.deployed_app import DeployedApp
 from models.server import Server
@@ -42,7 +43,12 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             used_ports = (
                 DeployedApp.query
                 .with_entities(DeployedApp.port)
-                .filter(DeployedApp.port.isnot(None))
+                .filter(
+                    and_(
+                        DeployedApp.port.isnot(None),
+                        DeployedApp.server_id == server_id
+                    )
+                )
                 .order_by(DeployedApp.port.asc())
                 .all()
             )
