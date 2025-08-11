@@ -173,11 +173,21 @@ def run_remote_deploy(
 
     # 2️⃣  Build command
     cmd = (
-    f"bash -c 'mkdir -p /home/log && chmod +x {remote_path} && "
-    f"{remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "
-    f"\"{appName}\" {email} \"{address}\" {phoneNumber} "
-    f"\"{companyName}\" {taxNumber} {port} 2>&1 | ts \"[%Y-%m-%d %H:%M:%S]\" "
-    f">> {log_file}'"
+        "bash -c '"
+        # Tạo thư mục log
+        f"mkdir -p /home/log && "
+        # Kiểm tra và cài moreutils nếu chưa có
+        "if ! command -v ts >/dev/null 2>&1; then "
+        'echo "Cài đặt moreutils..."; '
+        "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y moreutils; "
+        'else echo "moreutils đã được cài."; fi && '
+        # Chạy init.sh
+        f"chmod +x {remote_path} && "
+        f"{remote_path} {input_dir} {appId} {appSecret} {dnsWeb} "
+        f'"{appName}" {email} "{address}" {phoneNumber} '
+        f'"{companyName}" {taxNumber} {port} 2>&1 | '
+        'ts "[%Y-%m-%d %H:%M:%S]" '
+        f">> {log_file}'"
     )
 
     # 3️⃣  Thực thi + stream
