@@ -61,6 +61,27 @@ else
   echo "Success:  Python3 đã được cài."
 fi
 
+# --- PM2 ---
+if ! command -v pm2 &> /dev/null; then
+  echo "Cài đặt PM2..."
+
+  # Kiểm tra node
+  if ! command -v node &> /dev/null; then
+    echo "Node.js chưa có, tiến hành cài đặt Node.js 18..."
+    # Thêm repo Node.js 18 và cài
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+  else
+    echo "Success: Node.js đã được cài."
+  fi
+
+  # Cài pm2 toàn hệ thống
+  sudo npm install -g pm2
+else
+  echo "Success: PM2 đã được cài."
+fi
+
+
 # --- Pip ---
 if ! command -v pip3 &> /dev/null; then
   echo "Cài đặt PIP..."
