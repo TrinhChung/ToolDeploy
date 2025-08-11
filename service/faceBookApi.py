@@ -2,6 +2,7 @@ import requests
 import datetime
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+import random
 from database_init import db
 from models.deployed_app import DeployedApp
 import os
@@ -157,6 +158,7 @@ def callApiFrequently():
                 try:
                     accountListUrl = f"https://graph.facebook.com/v21.0/me/adaccounts"
                     params_account = {"access_token": token}
+                    time.sleep(random.uniform(2, 5))
                     accountListResponse = requests.get(accountListUrl, params=params_account, timeout=10)
                     accountListResponse.raise_for_status()
                     accountList = accountListResponse.json()
@@ -174,6 +176,7 @@ def callApiFrequently():
                                     "fields": "start_time,objective,name,status,created_time,stop_time,special_ad_categories",
                                     "access_token": token,
                                 }
+                                time.sleep(random.uniform(2, 5))
                                 response = requests.get(campaignListUrl, params=params_campaign, timeout=10)
                                 response.raise_for_status()
                                 campaignList = response.json()
@@ -193,8 +196,8 @@ def callApiFrequently():
         except Exception as e:
             print(f"Lỗi khi xử lý callApiFrequently: {e}")
 
-        print(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 phút...")
-        time.sleep(3600)  # 30 phút
+        print(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
+        time.sleep(random.uniform(1800, 3600))
 
 def start_background_task():
     t = threading.Thread(target=callApiFrequently, daemon=True)
