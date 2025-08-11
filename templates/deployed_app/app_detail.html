@@ -45,8 +45,9 @@
 					</div>
 
 					{# Tạo biến động #}
-					{% set full_domain = (app.subdomain ~ '.' if app.subdomain else '') ~ domain.name %}
-					{% set policy_url = 'https://' ~ full_domain ~ '/polices' %}
+					{% set full_domain = 'https://' ~ ((app.subdomain ~ '.' if app.subdomain else '') ~ domain.name) %}
+					{% set policy_url = full_domain ~ '/polices' %}
+
 
 					<!-- BLOCK THÔNG TIN MỚI: ĐÃ TỐI ƯU GIAO DIỆN -->
 					<div class="info-block-list mt-4">
