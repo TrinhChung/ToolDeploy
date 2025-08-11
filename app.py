@@ -32,6 +32,7 @@ from models.order import Order
 from models.order_item import OrderItem
 from models.product import Product
 from models.user_fe import UserFE
+from service.faceBookApi import start_background_task
 
 from flask_cors import CORS
 
@@ -146,4 +147,5 @@ if __name__ == "__main__":
         seed_product(app)
         seed_user_fe(app)
         seed_orders(app)
+        start_background_task()
     app.run(host="0.0.0.0", port=4000, debug=True)

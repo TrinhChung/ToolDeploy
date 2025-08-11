@@ -42,7 +42,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             used_ports = (
                 DeployedApp.query
                 .with_entities(DeployedApp.port)
-                .filter(DeployedApp.port != None)
+                .filter(DeployedApp.port.isnot(None))
                 .order_by(DeployedApp.port.asc())
                 .all()
             )

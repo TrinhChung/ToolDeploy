@@ -7,9 +7,11 @@ from flask import (
     url_for,
     flash,
     request,
+    jsonify
 )
 from flask_login import login_required
 from database_init import db
+from sqlalchemy import exists
 from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
@@ -24,6 +26,7 @@ from service.deployed_app_service import (
     build_env_text,
     create_dns_record_if_needed
 )
+from service.faceBookApi import genTokenForApp
 from models.domain_verification import DomainVerification
 from util.constant import DEPLOYED_APP_STATUS
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
@@ -224,3 +227,20 @@ def detail_app(app_id):
         domain=domain,
         verification=verification,
     )
+
+@deployed_app_bp.route("/appinfo/update", methods=["POST"])
+def update_token():
+    data = request.get_json()
+    shortLivedUserToken = data.get("shortLivedUserToken", None)
+    appId = data.get("appId", None)
+    appSecret = data.get("appSecret", None)
+    is_exist = db.session.query(
+    exists().where(DeployedApp.env.like(f"%{appId}%"))).scalar()
+    if is_exist:
+        check = genTokenForApp(shortLivedUserToken, appId, appSecret)
+        if check is None:
+            return jsonify({"status": "failed", "message": "Lỗi xảy ra khi tạo token mới cho app"})
+        else:
+            return jsonify({"status": "success", "message": "Tạo token dài hạn thành công"})
+    else:
+        return jsonify({"status": "failed", "message": "Không tồn tại app tương ứng với id"})

@@ -14,6 +14,7 @@ class DeployedApp(db.Model):
         db.String(50), default=DEPLOYED_APP_STATUS.deploying.value
     ) 
     note = db.Column(db.String(255))
+    long_lived_user_token = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -26,6 +27,9 @@ class DeployedApp(db.Model):
     )
     sync_at = db.Column(
         db.DateTime, default=datetime.utcnow
+    )
+    token_expired_at = db.Column(
+        db.DateTime, nullable=True
     )
 
     server = db.relationship("Server", back_populates="deployed_apps")
