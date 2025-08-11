@@ -17,6 +17,10 @@ TAX_NUMBER="${10}"
 NEW_PORT="${11}"
 TARGET_DIR="/home/$DNS_WEB"
 
+while ss -ltn "sport = :$NEW_PORT" 2>/dev/null | grep -q LISTEN; do
+    NEW_PORT=$((NEW_PORT + 1))
+done
+
 echo "Chọn port $NEW_PORT"
 echo "Cập nhật gói và cài ca-certificates, curl, gnupg, lsb-release..."
 sudo DEBIAN_FRONTEND=noninteractive apt-get update

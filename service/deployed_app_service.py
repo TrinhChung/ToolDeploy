@@ -38,7 +38,7 @@ def background_deploy(app, deployed_app_id, server_id, form_data, input_dir, dns
             deployed_app = session.query(DeployedApp).get(deployed_app_id)
             server = session.query(Server).get(server_id)
             logger.info("Đã vào background_deploy, lấy được app và server")
-            selectedPort = 6000
+            selectedPort = 5000
             used_ports = (
                 DeployedApp.query
                 .with_entities(DeployedApp.port)
