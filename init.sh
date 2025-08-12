@@ -331,7 +331,6 @@ else
     pip install -r requirements.txt
     flask db upgrade &&
     pm2 start "flask run --host=0.0.0.0 --port=$NEW_PORT" --name="$DNS_WEB"
-    disown
     echo "Success:  Flask started trên port $NEW_PORT"
     exit 0
   else
