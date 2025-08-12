@@ -116,7 +116,7 @@ def remote_turn_on(
 
     if not pid.isdigit():
         raise RuntimeError(f"Start failed:\n{err}")
-    return f"Started Flask (PID {pid})  →  /home/{subdomain}/flask.log"
+    return f"Started Flask (PID {pid})  →  /home/{fullDomain}/flask.log"
 
 
 def remote_turn_off(
