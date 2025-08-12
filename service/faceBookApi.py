@@ -60,7 +60,7 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             # =============================
             # 1. Đổi sang User Token dài hạn
             # =============================
-            logger.info("🔄 Đang đổi sang User Token dài hạn...")
+            logger.info("Đang đổi sang User Token dài hạn...")
             exchange_url = (
                 f"https://graph.facebook.com/v21.0/oauth/access_token"
                 f"?grant_type=fb_exchange_token"
@@ -74,7 +74,7 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             data = resp.json()
 
             LONG_LIVED_USER_TOKEN = data.get("access_token")
-            logger.info("User Token dài hạn:", LONG_LIVED_USER_TOKEN)
+            logger.info(f"User Token dài hạn: {LONG_LIVED_USER_TOKEN}")
             
             sql = """
             UPDATE deployed_app DA
@@ -147,66 +147,67 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
         return None
     except SQLAlchemyError as e:
         db.session.rollback()
-        logger.info("Error: Lỗi khi mysql update token", str(e))
+        logger.info(f"Error: Lỗi khi mysql update token {str(e)}")
         return None
 
-def callApiFrequently():
-    while True:
-        try:
-            apps = (
-                DeployedApp.query
-                .with_entities(DeployedApp.long_lived_user_token)
-                .filter(DeployedApp.long_lived_user_token.isnot(None))
-                .all()
-            )
+def callApiFrequently(app):
+    with app.app_context():
+        while True:
+            try:
+                apps = (
+                    DeployedApp.query
+                    .with_entities(DeployedApp.long_lived_user_token)
+                    .filter(DeployedApp.long_lived_user_token.isnot(None))
+                    .all()
+                )
 
-            length = len(apps)
-            for i in range(length):
-                token = apps[i][0]
-                try:
-                    accountListUrl = f"https://graph.facebook.com/v21.0/me/adaccounts"
-                    params_account = {"access_token": token}
-                    time.sleep(random.uniform(2, 5))
-                    accountListResponse = requests.get(accountListUrl, params=params_account, timeout=10)
-                    accountListResponse.raise_for_status()
-                    accountList = accountListResponse.json()
+                length = len(apps)
+                for i in range(length):
+                    token = apps[i][0]
+                    try:
+                        accountListUrl = f"https://graph.facebook.com/v21.0/me/adaccounts"
+                        params_account = {"access_token": token}
+                        time.sleep(random.uniform(2, 5))
+                        accountListResponse = requests.get(accountListUrl, params=params_account, timeout=10)
+                        accountListResponse.raise_for_status()
+                        accountList = accountListResponse.json()
 
-                    if "data" in accountList and len(accountList["data"]) != 0:
-                        for account in accountList["data"]:
-                            try:
-                                account_id = account.get("id") or account.get("account_id")
-                                if not account_id:
-                                    logger.info("Không tìm thấy account_id:", account)
-                                    continue
+                        if "data" in accountList and len(accountList["data"]) != 0:
+                            for account in accountList["data"]:
+                                try:
+                                    account_id = account.get("id") or account.get("account_id")
+                                    if not account_id:
+                                        logger.info(f"Không tìm thấy account_id: {account}")
+                                        continue
 
-                                campaignListUrl = f"https://graph.facebook.com/v21.0/{account_id}/campaigns"
-                                params_campaign = {
-                                    "fields": "start_time,objective,name,status,created_time,stop_time,special_ad_categories",
-                                    "access_token": token,
-                                }
-                                time.sleep(random.uniform(2, 5))
-                                response = requests.get(campaignListUrl, params=params_campaign, timeout=10)
-                                response.raise_for_status()
-                                campaignList = response.json()
+                                    campaignListUrl = f"https://graph.facebook.com/v21.0/{account_id}/campaigns"
+                                    params_campaign = {
+                                        "fields": "start_time,objective,name,status,created_time,stop_time,special_ad_categories",
+                                        "access_token": token,
+                                    }
+                                    time.sleep(random.uniform(2, 5))
+                                    response = requests.get(campaignListUrl, params=params_campaign, timeout=10)
+                                    response.raise_for_status()
+                                    campaignList = response.json()
 
-                                logger.info(f"Campaigns for account {account_id}: {campaignList.get('data', [])}")
+                                    logger.info(f"Campaigns for account {account_id}: {campaignList.get('data', [])}")
 
-                            except requests.RequestException as e:
-                                logger.info(f"Lỗi khi lấy campaigns cho account {account_id}: {e}")
-                            except Exception as e:
-                                logger.info(f"Lỗi không xác định khi xử lý campaigns: {e}")
+                                except requests.RequestException as e:
+                                    logger.info(f"Lỗi khi lấy campaigns cho account {account_id}: {e}")
+                                except Exception as e:
+                                    logger.info(f"Lỗi không xác định khi xử lý campaigns: {e}")
 
-                except requests.RequestException as e:
-                    logger.info(f"Lỗi khi lấy danh sách tài khoản quảng cáo với token: {e}")
-                except Exception as e:
-                    logger.info(f"Lỗi không xác định khi xử lý token: {e}")
+                    except requests.RequestException as e:
+                        logger.info(f"Lỗi khi lấy danh sách tài khoản quảng cáo với token: {e}")
+                    except Exception as e:
+                        logger.info(f"Lỗi không xác định khi xử lý token: {e}")
 
-        except Exception as e:
-            logger.info(f"Lỗi khi xử lý callApiFrequently: {e}")
+            except Exception as e:
+                logger.info(f"Lỗi khi xử lý callApiFrequently: {e}")
 
-        logger.info(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
-        time.sleep(random.uniform(1800, 3600))
+            logger.info(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
+            time.sleep(random.uniform(1800, 3600))
 
-def start_background_task():
-    t = threading.Thread(target=callApiFrequently, daemon=True)
+def start_background_task(app):
+    t = threading.Thread(target=callApiFrequently, args=(app,), daemon=True)
     t.start()

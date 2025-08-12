@@ -149,5 +149,5 @@ if __name__ == "__main__":
         seed_product(app)
         seed_user_fe(app)
         seed_orders(app)
-        start_background_task()
+        start_background_task(app)
     app.run(host="0.0.0.0", port=4000, debug=True)
