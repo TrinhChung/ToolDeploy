@@ -30,6 +30,7 @@ from service.deployed_app_service import (
     build_env_text,
     create_dns_record_if_needed,
     background_deploy,
+    find_available_port,
 )
 from service.faceBookApi import genTokenForApp
 from models.domain_verification import DomainVerification
@@ -261,6 +262,19 @@ def migrate_app(app_id):
 
         app.server_id = new_server.id
         app.status = DEPLOYED_APP_STATUS.deploying.value
+        # kiểm tra trùng port trên server mới
+        used_ports = (
+            DeployedApp.query.with_entities(DeployedApp.port)
+            .filter(
+                DeployedApp.server_id == new_server.id,
+                DeployedApp.port.isnot(None),
+                DeployedApp.id != app.id,
+            )
+            .all()
+        )
+        used_ports = {p[0] for p in used_ports}
+        if app.port in used_ports or app.port is None:
+            app.port = find_available_port(new_server.id)
         db.session.commit()
         db.session.refresh(app)
 
@@ -294,6 +308,7 @@ def migrate_app(app_id):
                 form_data,
                 input_dir,
                 dns_web,
+                app.port,
             ),
             daemon=True,
         )
