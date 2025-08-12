@@ -60,6 +60,7 @@
 								<form method="post" action="{{ url_for('server.delete_server', server_id=s.id) }}"
 									style="display:inline" onsubmit="return confirm('Bạn chắc chắn muốn xóa server này?')"
 									class="d-inline">
+									<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 									<button class="btn btn-sm btn-outline-danger" type="submit" title="Xóa">
 										<i class="fa fa-trash"></i>
 									</button>
