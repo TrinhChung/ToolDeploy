@@ -23,6 +23,7 @@ from util.cloud_flare import (
     add_or_update_txt_record,
     get_record_id_by_name,
     update_dns_record,
+    delete_dns_record,
 )
 from service.deployed_app_service import (
     start_background_deploy,
@@ -234,6 +235,48 @@ def detail_app(app_id):
         verification=verification,
         servers=servers,
     )
+
+
+@deployed_app_bp.route("/delete/<int:app_id>", methods=["POST"])
+@login_required
+def delete_app(app_id):
+    """Remove deployed app and related DNS records."""
+    app = DeployedApp.query.get_or_404(app_id)
+    domain = Domain.query.get_or_404(app.domain_id)
+    server = Server.query.get_or_404(app.server_id)
+
+    record_name = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+
+    try:
+        if domain.zone_id and domain.cloudflare_account:
+            for record_type in ["A", "TXT"]:
+                record_id = get_record_id_by_name(
+                    domain.zone_id,
+                    record_name,
+                    record_type,
+                    cf_account=domain.cloudflare_account,
+                )
+                if record_id:
+                    delete_dns_record(
+                        domain.zone_id, record_id, cf_account=domain.cloudflare_account
+                    )
+
+        DomainVerification.query.filter_by(deployed_app_id=app.id).delete()
+        db.session.delete(app)
+        db.session.commit()
+
+        # update server deployed app count if server has such attribute
+        remaining = DeployedApp.query.filter_by(server_id=server.id).count()
+        if hasattr(server, "deployed_apps_count"):
+            server.deployed_apps_count = remaining
+            db.session.commit()
+
+        flash("Đã xóa app và các DNS liên quan", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Lỗi khi xóa app: {e}", "danger")
+
+    return redirect(url_for("deployed_app.list_app"))
 
 
 @deployed_app_bp.route("/migrate/<int:app_id>", methods=["POST"])
