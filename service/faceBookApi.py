@@ -77,7 +77,7 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             logger.info("User Token dài hạn:", LONG_LIVED_USER_TOKEN)
             
             sql = """
-            UPDATE DEPLOYED_APP DA
+            UPDATE deployed_app DA
             SET DA.long_lived_user_token = :token,
                 DA.token_expired_at = :expire_at
             WHERE DA.env LIKE :pattern;
