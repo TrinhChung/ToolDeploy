@@ -5,6 +5,7 @@ from flask import (
     flash,
     current_app,
 )
+from sqlalchemy import and_
 from database_init import db
 from models.deployed_app import DeployedApp
 from models.server import Server
