@@ -8,6 +8,9 @@ from models.deployed_app import DeployedApp
 import os
 import threading
 import time
+import logging
+
+logger = logging.getLogger("deploy_logger")
 
 def process_expires_at(token_data):
     """
@@ -44,8 +47,8 @@ def checkValidToken(userToken:str, appId:str, appSecret:str):
             expire_at = process_expires_at(token_data)
             return is_valid, expire_at
     else:
-        print("Không thể lấy thông tin token.")
-        print(data)
+        logger.info("Không thể lấy thông tin token.")
+        logger.info(data)
         raise RuntimeError(f"Lỗi xảy ra khi kiểm tra token: {userToken} với app: {appId}")
         
 def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
@@ -57,7 +60,7 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             # =============================
             # 1. Đổi sang User Token dài hạn
             # =============================
-            print("🔄 Đang đổi sang User Token dài hạn...")
+            logger.info("🔄 Đang đổi sang User Token dài hạn...")
             exchange_url = (
                 f"https://graph.facebook.com/v21.0/oauth/access_token"
                 f"?grant_type=fb_exchange_token"
@@ -65,13 +68,13 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
                 f"&client_secret={appSecret}"
                 f"&fb_exchange_token={shortLivedToken}"
             )
-
+            logger
             resp = requests.get(exchange_url)
             resp.raise_for_status()
             data = resp.json()
 
             LONG_LIVED_USER_TOKEN = data.get("access_token")
-            print("User Token dài hạn:", LONG_LIVED_USER_TOKEN)
+            logger.info("User Token dài hạn:", LONG_LIVED_USER_TOKEN)
             
             sql = f"""
             UPDATE DEPLOYED_APP DA
@@ -88,10 +91,10 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             # # =============================
             # # 2. Lấy Page Access Token
             # # =============================
-            # print("Đang lấy Page Access Token...")
+            # logger.info("Đang lấy Page Access Token...")
             # # APP_SCOPED_USER_ID: với user hiện tại, bạn có thể dùng "me"
             # page_url = f"https://graph.facebook.com/v12.0/me/accounts?access_token={LONG_LIVED_USER_TOKEN}"
-            # print(f"call api: {page_url}")
+            # logger.info(f"call api: {page_url}")
 
             # resultList = []
 
@@ -114,7 +117,7 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             #         }
             #         resultList.append(page_dict)
             # else:
-            #     print("Không tìm thấy page nào hoặc token không đủ quyền.")
+            #     logger.info("Không tìm thấy page nào hoặc token không đủ quyền.")
 
             # # =============================
             # # 3. (Tùy chọn) Lưu token vào file
@@ -125,21 +128,21 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             #         for page in pages["data"]:
             #             f.write(f"PAGE_{page['id']}_TOKEN={page['access_token']}\n")
 
-            # print("💾 Token đã lưu vào tokens.txt")
+            # logger.info("💾 Token đã lưu vào tokens.txt")
         else:
             raise RuntimeError(f"short token: {shortLivedToken} của app: {appId} không còn hiệu lực.")
     except requests.Timeout:
-        print("Request timed out.")
+        logger.info("Request timed out.")
         return None
     except requests.RequestException as e:
-        print(f"Lỗi khi gen token: {str(e)}")
+        logger.info(f"Lỗi khi gen token: {str(e)}")
         return None
     except RuntimeError as e:
-        print(f"Lỗi khi gen token: {str(e)}")
+        logger.info(f"Lỗi khi gen token: {str(e)}")
         return None
     except SQLAlchemyError as e:
         db.session.rollback()
-        print("Error: Lỗi khi mysql update token", str(e))
+        logger.info("Error: Lỗi khi mysql update token", str(e))
         return None
 
 def callApiFrequently():
@@ -168,7 +171,7 @@ def callApiFrequently():
                             try:
                                 account_id = account.get("id") or account.get("account_id")
                                 if not account_id:
-                                    print("Không tìm thấy account_id:", account)
+                                    logger.info("Không tìm thấy account_id:", account)
                                     continue
 
                                 campaignListUrl = f"https://graph.facebook.com/v21.0/{account_id}/campaigns"
@@ -181,22 +184,22 @@ def callApiFrequently():
                                 response.raise_for_status()
                                 campaignList = response.json()
 
-                                print(f"Campaigns for account {account_id}: {campaignList.get('data', [])}")
+                                logger.info(f"Campaigns for account {account_id}: {campaignList.get('data', [])}")
 
                             except requests.RequestException as e:
-                                print(f"Lỗi khi lấy campaigns cho account {account_id}: {e}")
+                                logger.info(f"Lỗi khi lấy campaigns cho account {account_id}: {e}")
                             except Exception as e:
-                                print(f"Lỗi không xác định khi xử lý campaigns: {e}")
+                                logger.info(f"Lỗi không xác định khi xử lý campaigns: {e}")
 
                 except requests.RequestException as e:
-                    print(f"Lỗi khi lấy danh sách tài khoản quảng cáo với token: {e}")
+                    logger.info(f"Lỗi khi lấy danh sách tài khoản quảng cáo với token: {e}")
                 except Exception as e:
-                    print(f"Lỗi không xác định khi xử lý token: {e}")
+                    logger.info(f"Lỗi không xác định khi xử lý token: {e}")
 
         except Exception as e:
-            print(f"Lỗi khi xử lý callApiFrequently: {e}")
+            logger.info(f"Lỗi khi xử lý callApiFrequently: {e}")
 
-        print(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
+        logger.info(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
         time.sleep(random.uniform(1800, 3600))
 
 def start_background_task():
