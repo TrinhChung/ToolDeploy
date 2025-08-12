@@ -11,6 +11,7 @@ from flask import (
     jsonify,
     current_app,
 )
+from extensions import csrf
 from flask_login import login_required
 from database_init import db
 from sqlalchemy import exists
@@ -362,6 +363,7 @@ def migrate_app(app_id):
     return redirect(url_for("deployed_app.detail_app", app_id=app.id))
 
 @deployed_app_bp.route("/appinfo/update", methods=["POST"])
+@csrf.exempt
 def update_token():
     data = request.get_json()
     shortLivedUserToken = data.get("shortLivedUserToken", None)

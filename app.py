@@ -15,6 +15,7 @@ from seeder.seed_company import seed_companies
 from seeder.seed_product import seed_product
 from seeder.seed_user_fe import seed_user_fe
 from seeder.seed_order import seed_orders
+from extensions import csrf
 
 from util.until import format_datetime
 from models.user import User
@@ -74,7 +75,7 @@ def create_app():
     app.jinja_env.filters["datetimeformat"] = format_datetime
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(minutes=30)
 
-    csrf = CSRFProtect(app)
+    csrf.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
