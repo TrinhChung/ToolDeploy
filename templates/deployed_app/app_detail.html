@@ -105,21 +105,35 @@
 						<span class="small text-muted">Số lần tạo/cập nhật: {{ verification.create_count }}</span>
 					</div>
 					{% endif %}
-					<form action="{{ url_for('deployed_app.add_dns_txt', app_id=app.id) }}" method="post" class="mt-2 mb-2">
-						<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-						<div class="input-group">
-							<input type="text" class="form-control" name="txt_value" placeholder="Nhập TXT xác minh mới..."
-								value="{{ verification.txt_value if verification else '' }}" required>
-							<button type="submit" class="btn btn-outline-primary">
-								<i class="fa fa-sync-alt me-1"></i>Cập nhật TXT
-							</button>
-						</div>
-						<small class="form-text text-muted">Bạn có thể cập nhật giá trị TXT mới cho app này bất cứ lúc nào.</small>
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+                                        <form action="{{ url_for('deployed_app.add_dns_txt', app_id=app.id) }}" method="post" class="mt-2 mb-2">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <div class="input-group">
+                                                        <input type="text" class="form-control" name="txt_value" placeholder="Nhập TXT xác minh mới..."
+                                                                value="{{ verification.txt_value if verification else '' }}" required>
+                                                        <button type="submit" class="btn btn-outline-primary">
+                                                                <i class="fa fa-sync-alt me-1"></i>Cập nhật TXT
+                                                        </button>
+                                                </div>
+                                                <small class="form-text text-muted">Bạn có thể cập nhật giá trị TXT mới cho app này bất cứ lúc nào.</small>
+                                        </form>
+
+                                        <form action="{{ url_for('deployed_app.migrate_app', app_id=app.id) }}" method="post" class="mt-3">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <div class="input-group">
+                                                        <select name="server_id" class="form-select">
+                                                                {% for s in servers %}
+                                                                <option value="{{ s.id }}" {% if s.id == server.id %}selected{% endif %}>{{ s.name }}</option>
+                                                                {% endfor %}
+                                                        </select>
+                                                        <button type="submit" class="btn btn-outline-primary">
+                                                                <i class="fa fa-exchange-alt me-1"></i>Chuyển sang server
+                                                        </button>
+                                                </div>
+                                        </form>
+                                </div>
+                        </div>
+                </div>
+        </div>
 	<a href="{{ url_for('deployed_app.list_app') }}" class="btn btn-outline-secondary">
 		<i class="fa fa-arrow-left me-1"></i>Quay lại danh sách
 	</a>
