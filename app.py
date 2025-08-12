@@ -121,6 +121,7 @@ def create_app():
             "home.home",
             "video.serve_video",
             "static",
+            "deployed_app.update_token"
         ]
         if request.path.startswith("/api/"):
             return
