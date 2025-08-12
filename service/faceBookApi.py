@@ -76,13 +76,18 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             LONG_LIVED_USER_TOKEN = data.get("access_token")
             logger.info("User Token dài hạn:", LONG_LIVED_USER_TOKEN)
             
-            sql = f"""
+            sql = """
             UPDATE DEPLOYED_APP DA
-            SET DA.long_lived_user_token=:token, DA.token_expired_at=:expire_at 
-            WHERE ENV LIKE=="%:app_id%";
+            SET DA.long_lived_user_token = :token,
+                DA.token_expired_at = :expire_at
+            WHERE DA.env LIKE :pattern;
             """
 
-            params = {"token": LONG_LIVED_USER_TOKEN, "app_id": appId, "expire_at": expireAt}
+            params = {
+                "token": LONG_LIVED_USER_TOKEN,
+                "expire_at": expireAt,
+                "pattern": f"%{appId}%"
+            }
             db.session.execute(text(sql), params)
             db.session.commit()
 
