@@ -204,9 +204,7 @@ def get_company_by_origin():
     return jsonify(
         {
             "name": company.name,
-            "vietnamese_name": getattr(
-                company, "vietnamese_name", None
-            ),  # Tên tiếng Việt
+            "name_vn": getattr(company, "name_vn", None),  # Tên tiếng Việt
             "short_name": getattr(company, "short_name", None),  # Tên viết tắt
             "address": company.address,
             "hotline": company.hotline,
