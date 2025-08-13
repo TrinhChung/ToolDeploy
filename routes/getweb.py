@@ -124,10 +124,17 @@ def create_website():
         return redirect(url_for("genweb.list_website"))
 
     dns_records = Domain.query.all()
-    templates = Template.query.all()
+    templates = (
+        Template.query.filter(
+            db.func.lower(Template.country_code) == "us",
+            Template.deleted_at.is_(None),  # bỏ nếu bạn không dùng soft delete
+        )
+        .order_by(Template.priority.desc(), Template.name.asc())
+        .all()
+    )
     servers = Server.query.all()
     return render_template(
-        "genweb/create_website.html",
+        "genweb/create_website_us.html",
         dns_records=dns_records,
         templates=templates,
         servers=servers,

@@ -3,7 +3,7 @@ from database_init import db
 
 
 def seed_template(app):
-    """Seed 2 sample frontend templates."""
+    """Seed 3 sample frontend templates."""
     with app.app_context():
         templates = [
             {
@@ -12,6 +12,8 @@ def seed_template(app):
                 "sample_url": "skylinkny.asenanen2.com",
                 "port": 3000,
                 "backend": "https://tool-deploy.bmappp.com/",
+                "country_code": "us",
+                "priority": 50,
             },
             {
                 "name": "Fashion Template",
@@ -19,6 +21,17 @@ def seed_template(app):
                 "sample_url": "bmappp.com",
                 "port": 5173,
                 "backend": "https://tool-deploy.bmappp.com/",
+                "country_code": "us",
+                "priority": 1,
+            },
+            {
+                "name": "Bất động sản",
+                "description": "Template giới thiệu dự án bất động sản",
+                "sample_url": "realestate.example.com",
+                "port": 8330,
+                "backend": "https://tool-deploy.bmappp.com/",
+                "country_code": "vn",
+                "priority": 10,
             },
         ]
 
@@ -30,6 +43,8 @@ def seed_template(app):
                     sample_url=tpl["sample_url"],
                     port=tpl["port"],
                     backend=tpl["backend"],
+                    country_code=tpl["country_code"],
+                    priority=tpl["priority"],
                 )
                 db.session.add(template)
                 print(f"Success:  Đã tạo Template: {tpl['name']}")
