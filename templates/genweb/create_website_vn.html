@@ -167,6 +167,34 @@
 </div>
 
 <script>
+    // ===== Util: Bỏ dấu và chuẩn hoá về subdomain =====
+    function removeVietnameseDiacritics(str) {
+        if (!str) return '';
+        let s = str.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+        s = s.replace(/đ/g, 'd').replace(/Đ/g, 'D');
+        s = s.replace(/[^a-zA-Z0-9\s-_]/g, ' ');
+        s = s.trim().replace(/[\s_]+/g, '-').toLowerCase();
+        s = s.replace(/^-+|-+$/g, '').replace(/-+/g, '-');
+        return s;
+    }
+
+    // Chỉ gợi ý subdomain từ short_name
+    let subEditedByUser = false; // user đã sửa tay subdomain chưa?
+
+    function suggestSubdomainFromShort() {
+        const subInput = document.querySelector('input[name="subdomain"]');
+        const shortInput = document.querySelector('input[name="short_name"]');
+        if (!subInput || !shortInput) return;
+
+        // Chỉ tự điền nếu user chưa sửa tay
+        if (subEditedByUser) return;
+
+        const src = shortInput.value.trim();
+        const suggestion = removeVietnameseDiacritics(src);
+        subInput.value = suggestion;
+        updateStaticPageLink();
+    }
+
     // Lấy text domain đã chọn (không phải value id)
     function getSelectedDomainText() {
         const domainSelect = document.getElementById('domainSelect');
@@ -183,20 +211,35 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelector('input[name="subdomain"]').addEventListener('input', updateStaticPageLink);
+        // Track user edit subdomain
+        const subInput = document.querySelector('input[name="subdomain"]');
+        if (subInput) {
+            subInput.addEventListener('input', function () {
+                updateStaticPageLink();
+                // nếu người dùng gõ tay khác với gợi ý, đánh dấu đã sửa tay
+                subEditedByUser = true;
+                if (!subInput.value.trim()) {
+                    // nếu họ xoá trống -> cho phép auto gợi ý lại từ short_name
+                    subEditedByUser = false;
+                    suggestSubdomainFromShort();
+                }
+            });
+        }
+
+        // Khi đổi domain -> update link
         document.getElementById('domainSelect').addEventListener('change', updateStaticPageLink);
         updateStaticPageLink();
 
+        // Toggle nhập thô
         document.getElementById('toggleRawInput').addEventListener('change', function () {
             document.getElementById('rawInputArea').style.display = this.checked ? 'block' : 'none';
         });
-    });
 
-    document.addEventListener('DOMContentLoaded', function () {
-            const companyNameInput = document.querySelector('input[name="company_name"]');
-            const footerInput = document.querySelector('input[name="footer_text"]');
-            const descInput = document.querySelector('input[name="description"]');
-
+        // Gợi ý footer/description dựa trên company_name (không ghi đè khi đã nhập)
+        const companyNameInput = document.querySelector('input[name="company_name"]');
+        const footerInput = document.querySelector('input[name="footer_text"]');
+        const descInput = document.querySelector('input[name="description"]');
+        if (companyNameInput) {
             companyNameInput.addEventListener('input', function () {
                 const name = companyNameInput.value.trim();
                 if (name) {
@@ -208,22 +251,34 @@
                     }
                 }
             });
-        });
+        }
 
+        // CHỈ lắng nghe short_name để gợi ý subdomain
+        const shortInput = document.querySelector('input[name="short_name"]');
+        if (shortInput) {
+            shortInput.addEventListener('input', function () {
+                // Nếu user chưa sửa tay subdomain, hoặc subdomain đang rỗng -> gợi ý
+                if (!subEditedByUser || !subInput.value.trim()) {
+                    subEditedByUser = false; // cho phép ghi đè từ short_name
+                    suggestSubdomainFromShort();
+                }
+            });
+            // Gợi ý lần đầu khi load nếu subdomain đang rỗng
+            if (subInput && !subInput.value.trim()) {
+                suggestSubdomainFromShort();
+            }
+        }
+    });
 
-    // Không tự động điền form nữa – chỉ kiểm tra input text cơ bản
+    // Không tự động điền các field khác – chỉ kiểm tra input text cơ bản
     function normalizeCustomerText() {
         const text = document.getElementById('rawInput').value;
         const errorDiv = document.getElementById('normalizeError');
         errorDiv.innerText = "";
-
         if (!text.trim()) {
             errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
             return;
         }
-
-        // Bạn có thể thêm logic kiểm tra/ghi chú tại đây nếu cần,
-        // nhưng KHÔNG điền tự động vào các input của form.
         alert("Đã chuẩn hóa cơ bản nội dung. (Chức năng tự động điền đã tắt)");
     }
 
@@ -242,31 +297,22 @@
         const embedInput = document.querySelector('input[name="google_map_embed"]');
         const mapPreview = document.getElementById('mapEmbedPreview');
         if (!addressInput || !embedInput || !mapPreview) return;
-
         const address = addressInput.value.trim();
         if (!address) {
             embedInput.value = "";
             mapPreview.innerHTML = "";
             return;
         }
-        // Spinner khi đang loading
         mapPreview.innerHTML = spinnerHtml;
-
-        // Tạo link
         const embedUrl = makeGoogleMapEmbedUrl(address);
-
-        // Gán vào ô input Google Map Embed
         embedInput.value = embedUrl;
-
-        // Tạo iframe preview
         setTimeout(() => {
             mapPreview.innerHTML = `<iframe src="${embedUrl}" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
         }, 300);
     }
 
-    // Gán sự kiện onchange cho trường địa chỉ
+    // Khởi tạo preview map
     document.addEventListener('DOMContentLoaded', function () {
-        // Thêm khung preview map dưới ô nhập google_map_embed
         const mapEmbedInput = document.querySelector('input[name="google_map_embed"]');
         if (mapEmbedInput) {
             const mapEmbedRow = mapEmbedInput.closest('.mb-3');
@@ -277,7 +323,6 @@
                 mapEmbedRow.appendChild(mapPreviewDiv);
             }
         }
-        // Update mỗi khi thay đổi địa chỉ
         const addressField = document.querySelector('textarea[name="address"]');
         if (addressField) {
             addressField.addEventListener('input', updateGoogleMapEmbed);
@@ -287,19 +332,8 @@
     // Validate các trường bắt buộc trước khi submit
     document.getElementById('companyForm').addEventListener('submit', function (e) {
         const requiredFields = [
-            'company_name',
-            'address',
-            'hotline',
-            'email',
-            'subdomain',
-            'license_no',
-            'google_map_embed',
-            'footer_text',
-            'description',
-            'server_id',
-            'domain_id',
-            'template_id',
-            'static_page_link'
+            'company_name', 'address', 'hotline', 'email', 'subdomain', 'license_no',
+            'google_map_embed', 'footer_text', 'description', 'server_id', 'domain_id', 'template_id', 'static_page_link'
         ];
         let firstError = null;
         for (const name of requiredFields) {
@@ -318,6 +352,7 @@
         }
     });
 </script>
+
 
 <style>
     .is-invalid {
