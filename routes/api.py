@@ -7,6 +7,7 @@ from models.order import Order
 from models.order_item import OrderItem
 from models.company import Company
 from models.website import Website
+from urllib.parse import quote_plus
 
 api_bp = Blueprint('api_fe', __name__, url_prefix='/api')
 
@@ -180,6 +181,67 @@ def order_detail(order_id):
     return jsonify(_order_to_dict(order))
 
 
+def normalize_google_map_embed(raw_map: str | None, address: str | None) -> str:
+    """
+    Trả về HTML <iframe> nhúng Google Maps từ:
+    - iframe: rút src và đảm bảo có output=embed
+    - URL:    đảm bảo có output=embed
+    - địa chỉ/chuỗi thường: build URL q=...&output=embed
+    - rỗng: nếu có address thì dùng address; nếu không -> ""
+    """
+
+    def _ensure_output_embed(u: str) -> str:
+        if not u:
+            return ""
+        if "output=embed" in u:
+            return u
+        return u + ("&output=embed" if "?" in u else "?output=embed")
+
+    def _extract_src(html: str) -> str:
+        h = html
+        low = h.lower()
+        i = low.find("src=")
+        if i == -1:
+            return ""
+        if i + 4 >= len(h):
+            return ""
+        q = h[i + 4]
+        if q not in ('"', "'"):
+            return ""
+        j = h.find(q, i + 5)
+        if j == -1:
+            return ""
+        return h[i + 5 : j]
+
+    raw = (raw_map or "").strip()
+    addr = (address or "").strip()
+    src = ""
+
+    if not raw:
+        if addr:
+            src = _ensure_output_embed(
+                f"https://www.google.com/maps?q={quote_plus(addr)}"
+            )
+    else:
+        low = raw.lower()
+        if "<iframe" in low:
+            src = _ensure_output_embed(_extract_src(raw))
+        elif low.startswith("http"):
+            src = _ensure_output_embed(raw)
+        else:
+            src = _ensure_output_embed(
+                f"https://www.google.com/maps?q={quote_plus(raw)}"
+            )
+
+    if not src:
+        return ""
+    return (
+        f'<iframe src="{src}" width="100%" height="300" style="border:0;" '
+        f'allowfullscreen="" loading="lazy" '
+        f'referrerpolicy="no-referrer-when-downgrade"></iframe>'
+    )
+
+
 @api_bp.route("/company", methods=["GET"])
 def get_company_by_origin():
     """Trả về thông tin công ty dựa trên Origin domain (frontend)."""
@@ -201,6 +263,10 @@ def get_company_by_origin():
     if not company:
         return jsonify({"error": "No company found"}), 404
 
+    google_map_embed_norm = normalize_google_map_embed(
+        company.google_map_embed, company.address
+    )
+
     return jsonify(
         {
             "name": company.name,
@@ -213,7 +279,7 @@ def get_company_by_origin():
             "organization_no": getattr(company, "organization_no", None),  # Mã tổ chức
             "approval_date": getattr(company, "approval_date", None),  # Ngày phê duyệt
             "expiry_date": getattr(company, "expiry_date", None),  # Ngày hết hạn
-            "google_map_embed": company.google_map_embed,
+            "google_map_embed": google_map_embed_norm,
             "logo_url": company.logo_url,
             "footer_text": company.footer_text,
             "description": company.description,
