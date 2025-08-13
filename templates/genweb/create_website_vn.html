@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-3"><i class="fa fa-plus"></i> Tạo website mới</h3>
+    <form method="post" id="companyForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="toggleRawInput">
+            <label class="form-check-label" for="toggleRawInput">
+                Nhập thông tin khách hàng dạng text
+            </label>
+        </div>
+        <div id="rawInputArea" style="display: none;">
+            <label class="form-label">Dán thông tin khách hàng</label>
+            <textarea class="form-control mb-2" id="rawInput" rows="8"
+                placeholder="Dán đoạn text như khách gửi vào đây..."></textarea>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="normalizeCustomerText()">
+                Chuẩn hóa (không tự động điền form)
+            </button>
+            <div id="normalizeError" class="text-danger mt-2"></div>
+            <hr>
+        </div>
+
+        <h5 class="mb-3 mt-4">Thông tin công ty</h5>
+        <div class="mb-3">
+            <label class="form-label">Tên công ty</label>
+            <input name="company_name" required class="form-control">
+        </div>
+
+        <!-- Thêm: Tên công ty tiếng Việt -->
+        <div class="mb-3">
+            <label class="form-label">Tên công ty (Tiếng Việt)</label>
+            <input name="name_vn" class="form-control">
+        </div>
+
+        <!-- Thêm: Tên viết tắt -->
+        <div class="mb-3">
+            <label class="form-label">Tên viết tắt</label>
+            <input name="short_name" class="form-control">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Địa chỉ</label>
+            <textarea name="address" required class="form-control" rows="3"></textarea>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Hotline</label>
+                <input name="hotline" required class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Email (auto)</label>
+                <input name="email" type="email" required class="form-control">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Subdomain (auto)</label>
+                <input name="subdomain" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Mã số thuế</label>
+                <input name="license_no" class="form-control">
+            </div>
+        </div>
+        <div class="row">
+            <div class="mb-3">
+                <label class="form-label">Google Map Embed</label>
+                <input name="google_map_embed" class="form-control" id="mapEmbedInput"
+                    placeholder="Nhập địa chỉ hoặc dán link Google Maps">
+                <div class="form-text">
+                    <b>Gợi ý:</b> Bạn có thể nhập địa chỉ hoặc dán link Google Maps.<br>
+                    <b>Cách lấy link nhúng chính xác:</b>
+                    <ol style="margin: 0 0 0 22px;padding:0">
+                        <li>Mở địa chỉ trên <a href="https://maps.google.com/" target="_blank">Google Maps</a></li>
+                        <li>Bấm “Chia sẻ” &rarr; chọn tab “Nhúng bản đồ”</li>
+                        <li>Copy phần <b>src="..."</b> và dán vào ô này</li>
+                    </ol>
+                    <i>Nếu chỉ nhập địa chỉ, hệ thống sẽ tạo link embed đơn giản (có thể không tối ưu bằng link chính
+                        xác Google cung cấp).</i>
+                </div>
+                <div id="mapSuggest" class="mt-2"></div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Footer Text</label>
+                <input name="footer_text" class="form-control">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô tả ngắn</label>
+            <input name="description" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ghi chú</label>
+            <textarea name="company_note" class="form-control" rows="2"></textarea>
+        </div>
+
+        <hr class="my-4">
+        <h5 class="mb-3 mt-4">Thông tin website</h5>
+
+        {# --- SERVER PRIORITY: chọn web_product nếu có --- #}
+        {% set has_web_product = false %}
+        {% for s in servers %}
+        {% if 'web_product' in s.name|lower %}
+        {% set has_web_product = true %}
+        {% endif %}
+        {% endfor %}
+        <div class="mb-3">
+            <label class="form-label">Server</label>
+            <select name="server_id" required class="form-select">
+                {% for s in servers %}
+                <option value="{{ s.id }}"
+                    {% if 'web_product' in s.name|lower %}selected{% elif loop.first and not has_web_product %}selected{% endif %}>
+                    {{ s.name }} ({{ s.ip }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {# --- DOMAIN PRIORITY: chọn asenanen2.com nếu có --- #}
+        {% set has_asenanen2 = false %}
+        {% for d in dns_records %}
+        {% if d.name == "asenanen2.com" %}
+        {% set has_asenanen2 = true %}
+        {% endif %}
+        {% endfor %}
+        <div class="mb-3">
+            <label class="form-label">Domain</label>
+            <select name="domain_id" required class="form-select" id="domainSelect">
+                {% for d in dns_records %}
+                <option value="{{ d.id }}"
+                    {% if d.name == "asenanen2.com" %}selected{% elif loop.first and not has_asenanen2 %}selected{% endif %}>
+                    {{ d.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Template</label>
+            <select name="template_id" required class="form-select">
+                {% if templates %}
+                {% for t in templates %}
+                <option value="{{ t.id }}" {% if loop.first %}selected{% endif %}>
+                    {{ t.name }}
+                </option>
+                {% endfor %}
+                {% else %}
+                <option value="">-- Không có template --</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Link tĩnh</label>
+            <input name="static_page_link" class="form-control" id="staticPageLink" readonly>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ghi chú website</label>
+            <textarea name="website_note" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Tạo website</button>
+            <a href="{{ url_for('genweb.list_website') }}" class="btn btn-outline-secondary">Huỷ</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Lấy text domain đã chọn (không phải value id)
+    function getSelectedDomainText() {
+        const domainSelect = document.getElementById('domainSelect');
+        if (!domainSelect) return '';
+        const opt = domainSelect.options[domainSelect.selectedIndex];
+        return opt && opt.value ? opt.text : '';
+    }
+
+    // Cập nhật link tĩnh khi đổi subdomain/domain
+    function updateStaticPageLink() {
+        const sub = document.querySelector('input[name="subdomain"]').value.trim();
+        const domainText = getSelectedDomainText();
+        document.getElementById('staticPageLink').value = (sub && domainText) ? `${sub}.${domainText}` : '';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelector('input[name="subdomain"]').addEventListener('input', updateStaticPageLink);
+        document.getElementById('domainSelect').addEventListener('change', updateStaticPageLink);
+        updateStaticPageLink();
+
+        document.getElementById('toggleRawInput').addEventListener('change', function () {
+            document.getElementById('rawInputArea').style.display = this.checked ? 'block' : 'none';
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+            const companyNameInput = document.querySelector('input[name="company_name"]');
+            const footerInput = document.querySelector('input[name="footer_text"]');
+            const descInput = document.querySelector('input[name="description"]');
+
+            companyNameInput.addEventListener('input', function () {
+                const name = companyNameInput.value.trim();
+                if (name) {
+                    if (!footerInput.value.trim()) {
+                        footerInput.value = `© ${name} - Your trusted brand.`;
+                    }
+                    if (!descInput.value.trim()) {
+                        descInput.value = `${name} là công ty cung cấp sản phẩm và dịch vụ chất lượng cao cho khách hàng.`;
+                    }
+                }
+            });
+        });
+
+
+    // Không tự động điền form nữa – chỉ kiểm tra input text cơ bản
+    function normalizeCustomerText() {
+        const text = document.getElementById('rawInput').value;
+        const errorDiv = document.getElementById('normalizeError');
+        errorDiv.innerText = "";
+
+        if (!text.trim()) {
+            errorDiv.innerText = "Vui lòng nhập thông tin khách hàng dạng text!";
+            return;
+        }
+
+        // Bạn có thể thêm logic kiểm tra/ghi chú tại đây nếu cần,
+        // nhưng KHÔNG điền tự động vào các input của form.
+        alert("Đã chuẩn hóa cơ bản nội dung. (Chức năng tự động điền đã tắt)");
+    }
+
+    // Spinner HTML
+    const spinnerHtml = `<div style="text-align:center;padding:10px"><span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tải bản đồ...</div>`;
+
+    // Tạo link embed map từ địa chỉ
+    function makeGoogleMapEmbedUrl(address) {
+        if (!address || address.trim().length === 0) return "";
+        return `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+    }
+
+    // Render Google Map preview khi địa chỉ thay đổi
+    function updateGoogleMapEmbed() {
+        const addressInput = document.querySelector('textarea[name="address"]');
+        const embedInput = document.querySelector('input[name="google_map_embed"]');
+        const mapPreview = document.getElementById('mapEmbedPreview');
+        if (!addressInput || !embedInput || !mapPreview) return;
+
+        const address = addressInput.value.trim();
+        if (!address) {
+            embedInput.value = "";
+            mapPreview.innerHTML = "";
+            return;
+        }
+        // Spinner khi đang loading
+        mapPreview.innerHTML = spinnerHtml;
+
+        // Tạo link
+        const embedUrl = makeGoogleMapEmbedUrl(address);
+
+        // Gán vào ô input Google Map Embed
+        embedInput.value = embedUrl;
+
+        // Tạo iframe preview
+        setTimeout(() => {
+            mapPreview.innerHTML = `<iframe src="${embedUrl}" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+        }, 300);
+    }
+
+    // Gán sự kiện onchange cho trường địa chỉ
+    document.addEventListener('DOMContentLoaded', function () {
+        // Thêm khung preview map dưới ô nhập google_map_embed
+        const mapEmbedInput = document.querySelector('input[name="google_map_embed"]');
+        if (mapEmbedInput) {
+            const mapEmbedRow = mapEmbedInput.closest('.mb-3');
+            if (mapEmbedRow) {
+                const mapPreviewDiv = document.createElement('div');
+                mapPreviewDiv.id = "mapEmbedPreview";
+                mapPreviewDiv.className = "mt-2";
+                mapEmbedRow.appendChild(mapPreviewDiv);
+            }
+        }
+        // Update mỗi khi thay đổi địa chỉ
+        const addressField = document.querySelector('textarea[name="address"]');
+        if (addressField) {
+            addressField.addEventListener('input', updateGoogleMapEmbed);
+        }
+    });
+
+    // Validate các trường bắt buộc trước khi submit
+    document.getElementById('companyForm').addEventListener('submit', function (e) {
+        const requiredFields = [
+            'company_name',
+            'address',
+            'hotline',
+            'email',
+            'subdomain',
+            'license_no',
+            'google_map_embed',
+            'footer_text',
+            'description',
+            'server_id',
+            'domain_id',
+            'template_id',
+            'static_page_link'
+        ];
+        let firstError = null;
+        for (const name of requiredFields) {
+            const field = document.querySelector(`[name="${name}"]`);
+            if (field && !field.value.trim()) {
+                if (!firstError) firstError = field;
+                field.classList.add('is-invalid');
+            } else if (field) {
+                field.classList.remove('is-invalid');
+            }
+        }
+        if (firstError) {
+            e.preventDefault();
+            firstError.focus();
+            alert("Vui lòng nhập đầy đủ thông tin vào tất cả các trường bắt buộc!");
+        }
+    });
+</script>
+
+<style>
+    .is-invalid {
+        border: 1.5px solid #dc3545 !important;
+        background: #fff6f7;
+    }
+
+    .spinner-border {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        vertical-align: text-bottom;
+        border: 0.2em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-border .75s linear infinite;
+    }
+
+    @keyframes spinner-border {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}

@@ -165,6 +165,122 @@ def list_website():
     return render_template("genweb/list_website.html", websites=websites)
 
 
+@genweb_bp.route("/create-vn", methods=["GET", "POST"])
+@login_required
+def create_website_vn():
+    if request.method == "POST":
+        user_id = getattr(current_user, "id", None)
+        subdomain = request.form.get("subdomain", "").strip()
+        domain_id = request.form.get("domain_id")
+        server_id = request.form.get("server_id")
+        template_id = request.form.get("template_id")
+        domain = Domain.query.get(domain_id)
+        server = Server.query.get(server_id)
+        template = Template.query.get(template_id) if template_id else None
+
+        # Không cho chọn nhầm template không phải VN
+        if template and (template.country_code or "").lower() != "vn":
+            flash("Template phải thuộc loại VN.", "danger")
+            return redirect(url_for("genweb.create_website_vn"))
+
+        # --- Check exist on Cloudflare (not in DB) ---
+        if subdomain:
+            cf_account = domain.cloudflare_account
+            record_name = f"{subdomain}.{domain.name}"
+            try:
+                exists = check_dns_record_exists(
+                    zone_id=domain.zone_id, subdns=record_name, cf_account=cf_account
+                )
+                if exists:
+                    flash(
+                        "Error:   Subdomain này đã tồn tại trên Cloudflare!", "danger"
+                    )
+                    logger.warning(
+                        f"Phát hiện subdomain trùng (Cloudflare): zone_id={domain.zone_id}, subdomain={record_name}"
+                    )
+                    return redirect(url_for("genweb.create_website_vn"))
+            except Exception as e:
+                flash("Không kiểm tra được trạng thái DNS, thử lại!", "danger")
+                logger.error(f"Lỗi check DNS Cloudflare: {e}")
+                return redirect(url_for("genweb.create_website_vn"))
+
+        if not domain or not server:
+            flash("Thiếu thông tin domain hoặc server!", "danger")
+            logger.error("Thiếu thông tin domain hoặc server khi tạo website.")
+            return redirect(url_for("genweb.create_website_vn"))
+
+        # Create DNS record if needed
+        if not create_dns_record_if_needed(subdomain, domain, server):
+            logger.error("Lỗi khi tạo DNS record.")
+            return redirect(url_for("genweb.create_website_vn"))
+
+        # Get logo or random logo
+        logo_url = request.form.get("logo_url") or get_random_logo_url()
+        company = create_company_from_form(request.form, logo_url, user_id)
+        website = create_website_from_form(request.form, company.id, user_id)
+
+        # ====== Auto deploy nginx/certbot after website creation ======
+        domain_full = f"{subdomain}.{domain.name}" if subdomain else domain.name
+
+        # Get port from template or default 3000
+        deploy_port = getattr(template, "port", None) or 3000
+
+        # Deploy nginx/certbot via SSH (background)
+        start_nginx_certbot_deploy_bg(website.id, domain_full, port=deploy_port)
+
+        # ====== Update DNS Cloudflare: Enable proxy ======
+        try:
+            if subdomain:
+                cf_account = domain.cloudflare_account
+                zone_id = domain.zone_id
+                record_id = get_record_id_by_name(
+                    zone_id, record_name, "A", cf_account=cf_account
+                )
+                if record_id:
+                    update_dns_record(
+                        zone_id=zone_id,
+                        record_id=record_id,
+                        record_name=record_name,
+                        record_content=server.ip,
+                        record_type="A",
+                        proxied=True,
+                        cf_account=cf_account,
+                    )
+                    logger.info(f"Đã bật proxy cho record: {record_name}")
+                else:
+                    logger.warning(
+                        f"Không tìm thấy record để update proxy: {record_name}"
+                    )
+        except Exception as e:
+            logger.error(f"Lỗi khi update proxied Cloudflare: {str(e)}")
+
+        flash("Success:  Website và công ty đã được tạo thành công!", "success")
+        logger.info(
+            f"Đã tạo website mới (VN): company_id={company.id}, server_id={server_id}, "
+            f"domain_id={domain_id}, template_id={template_id}, domain_full={domain_full}"
+        )
+        return redirect(url_for("genweb.list_website"))
+
+    # GET: chỉ lấy template VN, ưu tiên priority DESC
+    dns_records = Domain.query.all()
+    templates = (
+        Template.query.filter(
+            db.func.lower(Template.country_code) == "vn",
+            Template.deleted_at.is_(None),
+        )
+        .order_by(Template.priority.desc(), Template.name.asc())
+        .all()
+    )
+    servers = Server.query.all()
+    # Có thể tái dùng cùng template Jinja hiện có
+    return render_template(
+        "genweb/create_website_vn.html",  # hoặc tạo file riêng create_website_vn.html nếu bạn muốn tách
+        dns_records=dns_records,
+        templates=templates,
+        servers=servers,
+    )
+
+
 @genweb_bp.route("/detail/<int:website_id>", methods=["GET", "POST"])
 @login_required
 def view_website(website_id):

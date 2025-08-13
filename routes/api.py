@@ -203,17 +203,22 @@ def get_company_by_origin():
 
     return jsonify(
         {
-            "id": company.id,
             "name": company.name,
+            "vietnamese_name": getattr(
+                company, "vietnamese_name", None
+            ),  # Tên tiếng Việt
+            "short_name": getattr(company, "short_name", None),  # Tên viết tắt
             "address": company.address,
             "hotline": company.hotline,
             "email": company.email,
             "license_no": company.license_no,
+            "organization_no": getattr(company, "organization_no", None),  # Mã tổ chức
+            "approval_date": getattr(company, "approval_date", None),  # Ngày phê duyệt
+            "expiry_date": getattr(company, "expiry_date", None),  # Ngày hết hạn
             "google_map_embed": company.google_map_embed,
             "logo_url": company.logo_url,
             "footer_text": company.footer_text,
             "description": company.description,
             "note": company.note,
-            "user_id": company.user_id,
         }
     )
