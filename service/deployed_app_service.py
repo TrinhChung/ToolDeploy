@@ -98,6 +98,7 @@ def background_deploy(
                     companyName=form_data["COMPANY_NAME"],
                     taxNumber=form_data["TAX_NUMBER"],
                     port=selected_port,
+                    local_script_path="./deploy_v2.sh",
                 )
                 logger.info(f"Deploy thành công: {log}")
                 deployed_app.status = DEPLOYED_APP_STATUS.active.value
@@ -217,7 +218,7 @@ def create_dns_record_if_needed(subdomain, domain_name, domain, server):
 
 def start_background_deploy(deployed_app, form, server, dns_web):
     input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
-    selected_port = find_available_port(server.id)
+    selected_port = 8000
     deployed_app.port = selected_port
     db.session.commit()
     form_data = {
