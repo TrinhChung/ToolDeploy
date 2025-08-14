@@ -288,7 +288,7 @@ def get_company_by_origin():
             "footer_text": company.footer_text,
             "description": company.description,
             "note": company.note,
-            "domain": "https://" + domain_name,
+            "domain": f"https://{domain_name or ''}",
         }
     )
 
