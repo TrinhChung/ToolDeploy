@@ -42,6 +42,15 @@ def seed_template(app):
                 "country_code": "vn",
                 "priority": 5,
             },
+            {
+                "name": "Esuhai",
+                "description": "Website giới thiệu công ty Esuhai và dịch vụ xuất khẩu lao động",
+                "sample_url": "esuhai.example.com",
+                "port": 8221,
+                "backend": "https://tool-deploy.bmappp.com/",
+                "country_code": "vn",
+                "priority": 5,
+            },
         ]
 
         for tpl in templates:
