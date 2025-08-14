@@ -7,7 +7,11 @@ from models.order import Order
 from models.order_item import OrderItem
 from models.company import Company
 from models.website import Website
+from models.deployed_app import DeployedApp
+from models.domain import Domain
 from urllib.parse import quote_plus
+from sqlalchemy.orm import joinedload
+import json
 
 api_bp = Blueprint('api_fe', __name__, url_prefix='/api')
 
@@ -284,5 +288,95 @@ def get_company_by_origin():
             "footer_text": company.footer_text,
             "description": company.description,
             "note": company.note,
+        }
+    )
+
+
+@api_bp.route("/deployed_app", methods=["GET"])
+def get_deployed_app_by_origin():
+    """
+    Trả về thông tin deployed_app dựa trên full domain (subdomain + domain.name).
+    """
+    origin = request.headers.get("X-Client-Domain")
+    print("Frontend Domain:", origin)
+
+    if not origin:
+        return jsonify({"error": "Missing X-Client-Domain header"}), 400
+
+    # Tách subdomain và domain name từ origin
+    parts = origin.split(".")
+    if len(parts) < 2:
+        return jsonify({"error": "Invalid domain format"}), 400
+
+    # Lấy tên domain chính (ví dụ: example.com)
+    domain_name = ".".join(parts[-2:])
+    # Lấy subdomain nếu có (ví dụ: app1)
+    subdomain = ".".join(parts[:-2]) if len(parts) > 2 else None
+
+    # JOIN DeployedApp với Domain
+    deployed_app = (
+        DeployedApp.query.join(Domain, DeployedApp.domain_id == Domain.id)
+        .options(joinedload(DeployedApp.domain))
+        .filter(Domain.name == domain_name)
+        .filter(DeployedApp.subdomain == subdomain)
+        .order_by(DeployedApp.created_at.desc())
+        .first()
+    )
+
+    if not deployed_app:
+        return jsonify({"error": "No deployed app found"}), 404
+
+    # Parse ENV từ text sang dict nếu là JSON
+    env_data = None
+    if deployed_app.env:
+        try:
+            env_data = json.loads(deployed_app.env)
+        except Exception:
+            env_data = deployed_app.env
+
+    # Ghép lại full domain
+    full_domain = (
+        f"{deployed_app.subdomain}.{deployed_app.domain.name}"
+        if deployed_app.subdomain
+        else deployed_app.domain.name
+    )
+
+    return jsonify(
+        {
+            "id": deployed_app.id,
+            "full_domain": full_domain,
+            "server_id": deployed_app.server_id,
+            "domain_id": deployed_app.domain_id,
+            "subdomain": deployed_app.subdomain,
+            "domain_name": deployed_app.domain.name,
+            "env": env_data,
+            "port": deployed_app.port,
+            "status": deployed_app.status,
+            "note": deployed_app.note,
+            "long_lived_user_token": deployed_app.long_lived_user_token,
+            "created_at": (
+                deployed_app.created_at.isoformat() if deployed_app.created_at else None
+            ),
+            "updated_at": (
+                deployed_app.updated_at.isoformat() if deployed_app.updated_at else None
+            ),
+            "activated_at": (
+                deployed_app.activated_at.isoformat()
+                if deployed_app.activated_at
+                else None
+            ),
+            "deactivated_at": (
+                deployed_app.deactivated_at.isoformat()
+                if deployed_app.deactivated_at
+                else None
+            ),
+            "sync_at": (
+                deployed_app.sync_at.isoformat() if deployed_app.sync_at else None
+            ),
+            "token_expired_at": (
+                deployed_app.token_expired_at.isoformat()
+                if deployed_app.token_expired_at
+                else None
+            ),
         }
     )
