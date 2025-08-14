@@ -17,6 +17,7 @@ from util.cloud_flare import (
     get_record_id_by_name,
     update_dns_record,
 )
+from service.nginx_deploy_service import deploy_nginx_certbot_via_ssh
 from util.constant import DEPLOYED_APP_STATUS
 
 logger = logging.getLogger("deploy_logger")
@@ -73,32 +74,20 @@ def background_deploy(
             server = session.query(Server).get(server_id)
             logger.info("Đã vào background_deploy, lấy được app và server")
 
-            # Nếu chưa truyền port, chọn port còn trống trên server
-            if selected_port is None:
-                selected_port = find_available_port(server_id)
-
             # Cập nhật port lên database trước khi deploy
             deployed_app.port = selected_port
             session.commit()
             session.refresh(deployed_app)
             print(f"Chọn port {selected_port}")
             try:
-                log = run_remote_deploy(
+                log = deploy_nginx_certbot_via_ssh(
                     host=server.ip,
                     user=server.admin_username,
                     password=server.admin_password,
-                    input_dir=input_dir,
-                    appId=form_data["APP_ID"],
-                    appSecret=form_data["APP_SECRET"],
-                    appName=form_data["APP_NAME"],
-                    email=form_data["EMAIL"],
-                    address=form_data["ADDRESS"],
-                    phoneNumber=form_data["PHONE_NUMBER"],
-                    dnsWeb=dns_web,
-                    companyName=form_data["COMPANY_NAME"],
-                    taxNumber=form_data["TAX_NUMBER"],
+                    domain=dns_web,
                     port=selected_port,
-                    local_script_path="./deploy_v2.sh",
+                    local_script_path="./deploy_nginx.sh",
+                    remote_script_path="/home/deploy_nginx.sh",
                 )
                 logger.info(f"Deploy thành công: {log}")
                 deployed_app.status = DEPLOYED_APP_STATUS.active.value
@@ -220,6 +209,7 @@ def start_background_deploy(deployed_app, form, server, dns_web):
     input_dir = deployed_app.subdomain or f"app_{deployed_app.id}"
     selected_port = 8000
     deployed_app.port = selected_port
+    
     db.session.commit()
     form_data = {
         "APP_ID": form.APP_ID.data,
