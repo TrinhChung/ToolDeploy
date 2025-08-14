@@ -8,12 +8,15 @@
 			<i class="fa fa-th-list text-primary me-2"></i>
 			Danh sách App Đã Deploy
 		</h2>
-		<div class="d-flex gap-2">
-			<a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
-				<i class="fa fa-plus"></i> Deploy App mới
-			</a>
-		</div>
-	</div>
+                <div class="d-flex gap-2">
+                        <a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
+                                <i class="fa fa-plus"></i> Deploy App mới
+                        </a>
+                        <a href="{{ url_for('deployed_app.sync_dns_txt') }}" class="btn btn-outline-info" onclick="return confirm('Bạn chắc chắn muốn đồng bộ trạng thái xác minh từ Cloudflare?')">
+                                <i class="fa fa-sync-alt"></i> Đồng bộ TXT
+                        </a>
+                </div>
+        </div>
 
 	<!-- Search and Filter -->
 	<div class="d-flex flex-wrap gap-3 align-items-center mb-3">
