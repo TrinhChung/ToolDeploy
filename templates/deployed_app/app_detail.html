@@ -134,6 +134,9 @@
                         </div>
                 </div>
         </div>
+				<a href="{{ full_domain ~ '/app/call_api' }}" target="_blank" class="btn btn-primary">
+					<i class="fa fa-terminal me-1"></i>Gọi API của App
+				</a>
         <form action="{{ url_for('deployed_app.delete_app', app_id=app.id) }}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa app này?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger me-2">

@@ -149,7 +149,7 @@ python3 --version || echo "Python Error:  "
 # --- xử lý pull code ---
 echo
 echo "Pull code"
-REPO_URL="https://github.com/bach-long/getvideo-public.git"
+REPO_URL="https://github.com/TrinhChung/GetVideo.git"
 
 if [ ! -d "$TARGET_DIR" ]; then
   echo "Thư mục chưa tồn tại, đang clone từ git..."
