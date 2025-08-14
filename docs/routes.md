@@ -39,6 +39,7 @@ Các route được nhóm theo từng blueprint. Phần lớn các trang (ngoạ
 ## Deploy ứng dụng
 - `GET|POST /deployed_app/deploy`
 - `GET /deployed_app/list`
+- `GET /deployed_app/sync-dns-txt`
 - `POST /deployed_app/add-dns-txt/<app_id>`
 - `POST /deployed_app/stop-app/<app_id>`
 - `POST /deployed_app/confirm-facebook/<app_id>`

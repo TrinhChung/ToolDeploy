@@ -1,5 +1,6 @@
 import secrets
 import logging
+import requests
 from flask import (
     Blueprint,
     render_template,
@@ -16,9 +17,10 @@ from sqlalchemy import exists
 from models.deployed_app import DeployedApp
 from models.server import Server
 from models.domain import Domain
+from models.cloudflare_acc import CloudflareAccount
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import remote_turn_off, do_sync
-from util.cloud_flare import add_or_update_txt_record
+from util.cloud_flare import add_or_update_txt_record, build_cf_headers
 from service.deployed_app_service import (
     start_background_deploy,
     create_deployed_app,
@@ -115,6 +117,69 @@ def sync():
             flash(f"Lỗi sync: {e}")
             return redirect(url_for("deployed_app.list_app"))
     flash("Đồng bộ thành công port và status", "success")
+    return redirect(url_for("deployed_app.list_app"))
+
+
+@deployed_app_bp.route("/sync-dns-txt")
+@login_required
+def sync_dns_txt():
+    """Đồng bộ trạng thái xác minh TXT của các app từ Cloudflare."""
+    BASE_URL = "https://api.cloudflare.com/client/v4"
+    try:
+        db.session.expire_all()
+
+        apps = (
+            db.session.query(DeployedApp, Domain)
+            .join(Domain, DeployedApp.domain_id == Domain.id)
+            .all()
+        )
+        app_map = {}
+        for app, domain in apps:
+            full_domain = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+            txt_value = app.verification.txt_value if app.verification else None
+            app_map[full_domain] = (app, txt_value)
+
+        cf_accounts = CloudflareAccount.query.all()
+        for cf_acc in cf_accounts:
+            headers = build_cf_headers(cf_acc)
+            zones_resp = requests.get(f"{BASE_URL}/zones", headers=headers)
+            zones = zones_resp.json().get("result", [])
+            for zone in zones:
+                zone_id = zone.get("id")
+                records_resp = requests.get(
+                    f"{BASE_URL}/zones/{zone_id}/dns_records?type=TXT", headers=headers
+                )
+                records = records_resp.json().get("result", [])
+                for record in records:
+                    name = record.get("name")
+                    content = record.get("content")
+                    if name in app_map:
+                        app, txt_val = app_map[name]
+                        verification = app.verification
+
+                        if app.status != DEPLOYED_APP_STATUS.add_txt.value:
+                            if txt_val is None or txt_val == content:
+                                app.status = DEPLOYED_APP_STATUS.add_txt.value
+
+                        if verification is None or not verification.txt_value:
+                            if verification:
+                                verification.txt_value = content
+                                verification.create_count = (verification.create_count or 0) + 1
+                            else:
+                                db.session.add(
+                                    DomainVerification(
+                                        deployed_app_id=app.id,
+                                        txt_value=content,
+                                        create_count=1,
+                                    )
+                                )
+
+        db.session.commit()
+        db.session.expire_all()
+        flash("Đã đồng bộ trạng thái xác minh TXT từ Cloudflare!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Lỗi đồng bộ TXT: {e}", "danger")
     return redirect(url_for("deployed_app.list_app"))
 
 
