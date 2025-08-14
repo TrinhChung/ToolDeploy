@@ -155,9 +155,24 @@ def sync_dns_txt():
                     content = record.get("content")
                     if name in app_map:
                         app, txt_val = app_map[name]
+                        verification = app.verification
+
                         if app.status != DEPLOYED_APP_STATUS.add_txt.value:
                             if txt_val is None or txt_val == content:
                                 app.status = DEPLOYED_APP_STATUS.add_txt.value
+
+                        if verification is None or not verification.txt_value:
+                            if verification:
+                                verification.txt_value = content
+                                verification.create_count = (verification.create_count or 0) + 1
+                            else:
+                                db.session.add(
+                                    DomainVerification(
+                                        deployed_app_id=app.id,
+                                        txt_value=content,
+                                        create_count=1,
+                                    )
+                                )
 
         db.session.commit()
         db.session.expire_all()
