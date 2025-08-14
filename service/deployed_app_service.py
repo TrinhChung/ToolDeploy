@@ -16,9 +16,11 @@ from util.cloud_flare import (
     add_dns_record,
     get_record_id_by_name,
     update_dns_record,
+    delete_dns_record,
 )
 from service.nginx_deploy_service import deploy_nginx_certbot_via_ssh
 from util.constant import DEPLOYED_APP_STATUS
+from models.domain_verification import DomainVerification
 
 logger = logging.getLogger("deploy_logger")
 
@@ -235,3 +237,108 @@ def start_background_deploy(deployed_app, form, server, dns_web):
         daemon=True,
     )
     thread.start()
+
+
+def remove_deployed_app(app_id: int) -> None:
+    app = DeployedApp.query.get_or_404(app_id)
+    domain = Domain.query.get_or_404(app.domain_id)
+    server = Server.query.get_or_404(app.server_id)
+    record_name = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+    try:
+        if domain.zone_id and domain.cloudflare_account:
+            for record_type in ["A", "TXT"]:
+                record_id = get_record_id_by_name(
+                    domain.zone_id,
+                    record_name,
+                    record_type,
+                    cf_account=domain.cloudflare_account,
+                )
+                if record_id:
+                    delete_dns_record(
+                        domain.zone_id, record_id, cf_account=domain.cloudflare_account
+                    )
+        DomainVerification.query.filter_by(deployed_app_id=app.id).delete()
+        db.session.delete(app)
+        db.session.commit()
+        remaining = DeployedApp.query.filter_by(server_id=server.id).count()
+        if hasattr(server, "deployed_apps_count"):
+            server.deployed_apps_count = remaining
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def migrate_deployed_app(app_id: int, new_server_id: int) -> None:
+    app = DeployedApp.query.get_or_404(app_id)
+    new_server = Server.query.get_or_404(new_server_id)
+    domain = Domain.query.get_or_404(app.domain_id)
+
+    if domain.zone_id and domain.cloudflare_account:
+        record_name = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+        record_id = get_record_id_by_name(
+            domain.zone_id, record_name, "A", cf_account=domain.cloudflare_account
+        )
+        if record_id:
+            update_dns_record(
+                zone_id=domain.zone_id,
+                record_id=record_id,
+                record_name=record_name,
+                record_content=new_server.ip,
+                record_type="A",
+                cf_account=domain.cloudflare_account,
+            )
+
+    app.server_id = new_server.id
+    app.status = DEPLOYED_APP_STATUS.deploying.value
+    used_ports = (
+        DeployedApp.query.with_entities(DeployedApp.port)
+        .filter(
+            DeployedApp.server_id == new_server.id,
+            DeployedApp.port.isnot(None),
+            DeployedApp.id != app.id,
+        )
+        .all()
+    )
+    used_ports = {p[0] for p in used_ports}
+    if app.port in used_ports or app.port is None:
+        app.port = find_available_port(new_server.id)
+    db.session.commit()
+    db.session.refresh(app)
+
+    env_data = {}
+    for line in (app.env or "").splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            env_data[k.strip()] = v.strip()
+
+    form_data = {
+        key: env_data.get(key)
+        for key in [
+            "APP_ID",
+            "APP_SECRET",
+            "APP_NAME",
+            "EMAIL",
+            "ADDRESS",
+            "PHONE_NUMBER",
+            "COMPANY_NAME",
+            "TAX_NUMBER",
+        ]
+    }
+    input_dir = app.subdomain or f"app_{app.id}"
+    dns_web = env_data.get("DNS_WEB")
+    thread = threading.Thread(
+        target=background_deploy,
+        args=(
+            current_app._get_current_object(),
+            app.id,
+            new_server.id,
+            form_data,
+            input_dir,
+            dns_web,
+            app.port,
+        ),
+        daemon=True,
+    )
+    thread.start()
+

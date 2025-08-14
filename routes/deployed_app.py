@@ -1,6 +1,5 @@
 import secrets
 import logging
-import threading
 from flask import (
     Blueprint,
     render_template,
@@ -9,7 +8,6 @@ from flask import (
     flash,
     request,
     jsonify,
-    current_app,
 )
 from extensions import csrf
 from flask_login import login_required
@@ -20,19 +18,14 @@ from models.server import Server
 from models.domain import Domain
 from Form.deploy_app_form import DeployAppForm
 from bash_script.remote_deploy import remote_turn_off, do_sync
-from util.cloud_flare import (
-    add_or_update_txt_record,
-    get_record_id_by_name,
-    update_dns_record,
-    delete_dns_record,
-)
+from util.cloud_flare import add_or_update_txt_record
 from service.deployed_app_service import (
     start_background_deploy,
     create_deployed_app,
     build_env_text,
     create_dns_record_if_needed,
-    background_deploy,
-    find_available_port,
+    remove_deployed_app,
+    migrate_deployed_app,
 )
 from service.faceBookApi import genTokenForApp
 from models.domain_verification import DomainVerification
@@ -241,40 +234,10 @@ def detail_app(app_id):
 @deployed_app_bp.route("/delete/<int:app_id>", methods=["POST"])
 @login_required
 def delete_app(app_id):
-    """Remove deployed app and related DNS records."""
-    app = DeployedApp.query.get_or_404(app_id)
-    domain = Domain.query.get_or_404(app.domain_id)
-    server = Server.query.get_or_404(app.server_id)
-
-    record_name = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
-
     try:
-        if domain.zone_id and domain.cloudflare_account:
-            for record_type in ["A", "TXT"]:
-                record_id = get_record_id_by_name(
-                    domain.zone_id,
-                    record_name,
-                    record_type,
-                    cf_account=domain.cloudflare_account,
-                )
-                if record_id:
-                    delete_dns_record(
-                        domain.zone_id, record_id, cf_account=domain.cloudflare_account
-                    )
-
-        DomainVerification.query.filter_by(deployed_app_id=app.id).delete()
-        db.session.delete(app)
-        db.session.commit()
-
-        # update server deployed app count if server has such attribute
-        remaining = DeployedApp.query.filter_by(server_id=server.id).count()
-        if hasattr(server, "deployed_apps_count"):
-            server.deployed_apps_count = remaining
-            db.session.commit()
-
+        remove_deployed_app(app_id)
         flash("Đã xóa app và các DNS liên quan", "success")
     except Exception as e:
-        db.session.rollback()
         flash(f"Lỗi khi xóa app: {e}", "danger")
 
     return redirect(url_for("deployed_app.list_app"))
@@ -284,83 +247,12 @@ def delete_app(app_id):
 @login_required
 def migrate_app(app_id):
     new_server_id = request.form.get("server_id", type=int)
-    app = DeployedApp.query.get_or_404(app_id)
-    new_server = Server.query.get_or_404(new_server_id)
-    domain = Domain.query.get_or_404(app.domain_id)
-
     try:
-        if domain.zone_id and domain.cloudflare_account:
-            record_name = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
-            record_id = get_record_id_by_name(
-                domain.zone_id, record_name, "A", cf_account=domain.cloudflare_account
-            )
-            if record_id:
-                update_dns_record(
-                    zone_id=domain.zone_id,
-                    record_id=record_id,
-                    record_name=record_name,
-                    record_content=new_server.ip,
-                    record_type="A",
-                    cf_account=domain.cloudflare_account,
-                )
-
-        app.server_id = new_server.id
-        app.status = DEPLOYED_APP_STATUS.deploying.value
-        # kiểm tra trùng port trên server mới
-        used_ports = (
-            DeployedApp.query.with_entities(DeployedApp.port)
-            .filter(
-                DeployedApp.server_id == new_server.id,
-                DeployedApp.port.isnot(None),
-                DeployedApp.id != app.id,
-            )
-            .all()
-        )
-        used_ports = {p[0] for p in used_ports}
-        if app.port in used_ports or app.port is None:
-            app.port = find_available_port(new_server.id)
-        db.session.commit()
-        db.session.refresh(app)
-
-        env_data = {}
-        for line in (app.env or "").splitlines():
-            if "=" in line:
-                k, v = line.split("=", 1)
-                env_data[k.strip()] = v.strip()
-
-        form_data = {
-            key: env_data.get(key)
-            for key in [
-                "APP_ID",
-                "APP_SECRET",
-                "APP_NAME",
-                "EMAIL",
-                "ADDRESS",
-                "PHONE_NUMBER",
-                "COMPANY_NAME",
-                "TAX_NUMBER",
-            ]
-        }
-        input_dir = app.subdomain or f"app_{app.id}"
-        dns_web = env_data.get("DNS_WEB")
-        thread = threading.Thread(
-            target=background_deploy,
-            args=(
-                current_app._get_current_object(),
-                app.id,
-                new_server.id,
-                form_data,
-                input_dir,
-                dns_web,
-                app.port,
-            ),
-            daemon=True,
-        )
-        thread.start()
+        migrate_deployed_app(app_id, new_server_id)
         flash("Đang chuyển app sang server mới...", "info")
     except Exception as e:
         flash(f"Lỗi chuyển server: {e}", "danger")
-    return redirect(url_for("deployed_app.detail_app", app_id=app.id))
+    return redirect(url_for("deployed_app.detail_app", app_id=app_id))
 
 @deployed_app_bp.route("/appinfo/update", methods=["POST"])
 @csrf.exempt
