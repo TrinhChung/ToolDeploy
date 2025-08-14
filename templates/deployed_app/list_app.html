@@ -12,9 +12,6 @@
 			<a href="{{ url_for('deployed_app.deploy_app') }}" class="btn btn-success">
 				<i class="fa fa-plus"></i> Deploy App mới
 			</a>
-			<a href="{{ url_for('deployed_app.sync') }}" class="btn btn-info">
-				<i class="fa fa-sync-alt"></i> Đồng bộ port và status
-			</a>
 		</div>
 	</div>
 
@@ -136,10 +133,6 @@
 							</div>
 						</div>
 						{% elif app.status == 'add_txt' %}
-						<form action="{{ url_for('deployed_app.stop_app', app_id=app.id) }}" method="post" class="d-inline">
-							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-							<button type="submit" class="btn btn-sm btn-outline-warning">Dừng App</button>
-						</form>
 						{% elif app.status == 'failed' %}
 						<form action="{{ url_for('deployed_app.redeploy_app', app_id=app.id) }}" method="post" class="d-inline">
 							<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
