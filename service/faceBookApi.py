@@ -92,48 +92,6 @@ def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
             db.session.commit()
 
             return LONG_LIVED_USER_TOKEN
-
-            # # =============================
-            # # 2. Lấy Page Access Token
-            # # =============================
-            # logger.info("Đang lấy Page Access Token...")
-            # # APP_SCOPED_USER_ID: với user hiện tại, bạn có thể dùng "me"
-            # page_url = f"https://graph.facebook.com/v12.0/me/accounts?access_token={LONG_LIVED_USER_TOKEN}"
-            # logger.info(f"call api: {page_url}")
-
-            # resultList = []
-
-            # resp = requests.get(page_url)
-            # resp.raise_for_status()
-            # pages = resp.json()
-
-            # if "data" in pages and len(pages["data"]) != 0:
-            #     for page in pages["data"]:
-            #         page_name = page.get("name")
-            #         page_id = page.get("id")
-            #         page_token = page.get("access_token")
-
-            #         # Tạo dict theo định dạng yêu cầu
-            #         page_dict = {
-            #             page_id: {
-            #                 "name": page_name,
-            #                 "pageToken": page_token
-            #             }
-            #         }
-            #         resultList.append(page_dict)
-            # else:
-            #     logger.info("Không tìm thấy page nào hoặc token không đủ quyền.")
-
-            # # =============================
-            # # 3. (Tùy chọn) Lưu token vào file
-            # # =============================
-            # with open("tokens.txt", "w", encoding="utf-8") as f:
-            #     f.write(f"LONG_LIVED_USER_TOKEN={LONG_LIVED_USER_TOKEN}\n")
-            #     if "data" in pages:
-            #         for page in pages["data"]:
-            #             f.write(f"PAGE_{page['id']}_TOKEN={page['access_token']}\n")
-
-            # logger.info("💾 Token đã lưu vào tokens.txt")
         else:
             raise RuntimeError(f"short token: {shortLivedToken} của app: {appId} không còn hiệu lực.")
     except requests.Timeout:

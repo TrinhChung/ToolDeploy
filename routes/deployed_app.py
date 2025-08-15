@@ -32,6 +32,12 @@ from service.deployed_app_service import (
 from service.faceBookApi import genTokenForApp
 from models.domain_verification import DomainVerification
 from util.constant import DEPLOYED_APP_STATUS
+from rq import Queue
+from redis import Redis
+from util.tasks import process_app_api
+
+redis_conn = Redis()
+q = Queue(connection=redis_conn)
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 logger = logging.getLogger("deploy_logger")
@@ -336,3 +342,20 @@ def update_token():
             return jsonify({"status": "success", "message": "Tạo token dài hạn thành công"})
     else:
         return jsonify({"status": "failed", "message": "Không tồn tại app tương ứng với id"})
+
+
+@deployed_app_bp.route("/call_api/<int:app_id>", methods=["POST"])
+@login_required
+def call_api(app_id):
+    """Thêm job vào Redis queue."""
+    app = DeployedApp.query.get_or_404(app_id)
+
+    if not app.long_lived_user_token:
+        flash("App này chưa có long_lived_user_token!", "warning")
+        return redirect(url_for("deployed_app.detail_app", app_id=app_id))
+        
+    # Đẩy job vào queue
+    job = q.enqueue(process_app_api, app.id)
+    flash(f"📌 Đã tạo job {job.id} để xử lý API cho app #{app.id}", "success")
+
+    return redirect(url_for("deployed_app.detail_app", app_id=app_id))
