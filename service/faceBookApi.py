@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timedelta
 import threading
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import func, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import load_only
@@ -24,9 +25,14 @@ BASE = f"https://graph.facebook.com/{GRAPH_VERSION}"
 
 IDLE_IF_NO_JOB_SECONDS = 30
 MAX_SLEEP_UNTIL_NEXT_JOB = 60
-BATCH_LIMIT = 120
 CLAIM_JITTER_MIN = 2
 CLAIM_JITTER_MAX = 5
+
+DEFAULT_MAX_WORKERS = max(2, (os.cpu_count() or 1) * 2)
+MAX_WORKERS = int(os.getenv("FACEBOOK_API_MAX_WORKERS", DEFAULT_MAX_WORKERS))
+BATCH_LIMIT = int(
+    os.getenv("FACEBOOK_API_BATCH_LIMIT", MAX_WORKERS * 20)
+)
 
 _http = requests.Session()
 _http.mount(
@@ -240,6 +246,14 @@ def call_facebook_api(deployed_app_id: int, api_type_id: int, access_token: str)
 
 
 # ---------------- Scheduler ----------------
+def _run_call(app, app_id: int, api_type_id: int, token: str) -> None:
+    with app.app_context():
+        try:
+            call_facebook_api(app_id, api_type_id, token)
+        finally:
+            db.session.remove()
+
+
 def _has_any_status_rows() -> bool:
     return (
         db.session.query(FacebookApiStatus.deployed_app_id).limit(1).first() is not None
@@ -360,30 +374,43 @@ def due_scheduler_worker(app):
                     claimed[:3],
                 )
 
-                # Map token 1 lần
-                tokens = {
-                    row.id: row.long_lived_user_token
-                    for row in DeployedApp.query.options(
-                        load_only(DeployedApp.id, DeployedApp.long_lived_user_token)
-                    )
-                    .filter(DeployedApp.long_lived_user_token.isnot(None))
-                    .all()
-                }
+                # Map token cho các app được claim
+                app_ids = {app_id for app_id, _ in claimed}
+                tokens = {}
+                if app_ids:
+                    tokens = {
+                        row.id: row.long_lived_user_token
+                        for row in DeployedApp.query.options(
+                            load_only(
+                                DeployedApp.id, DeployedApp.long_lived_user_token
+                            )
+                        )
+                        .filter(
+                            DeployedApp.id.in_(app_ids),
+                            DeployedApp.long_lived_user_token.isnot(None),
+                        )
+                        .all()
+                    }
 
-                # Gọi API cho từng job
-                for app_id, api_type_id in claimed:
-                    token = tokens.get(app_id)
-                    if not token:
-                        st = FacebookApiStatus.query.filter_by(
-                            deployed_app_id=app_id, api_type_id=api_type_id
-                        ).first()
-                        if st:
-                            st.set_cooldown(300)
-                            st.record_call(success=False)
-                            _commit_with_retry("no-token")
-                        continue
-
-                    call_facebook_api(app_id, api_type_id, token)
+                # Gọi API cho từng job song song
+                with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                    futures = []
+                    for app_id, api_type_id in claimed:
+                        token = tokens.get(app_id)
+                        if not token:
+                            st = FacebookApiStatus.query.filter_by(
+                                deployed_app_id=app_id, api_type_id=api_type_id
+                            ).first()
+                            if st:
+                                st.set_cooldown(300)
+                                st.record_call(success=False)
+                                _commit_with_retry("no-token")
+                            continue
+                        futures.append(
+                            executor.submit(_run_call, app, app_id, api_type_id, token)
+                        )
+                    for f in futures:
+                        f.result()
 
             except OperationalError as e:
                 logger.error("[FB-DUE] DB error: %s", e)
