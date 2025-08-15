@@ -29,9 +29,15 @@ from service.deployed_app_service import (
     remove_deployed_app,
     migrate_deployed_app,
 )
-from service.faceBookApi import genTokenForApp
+from util.facebook import genTokenForApp
 from models.domain_verification import DomainVerification
 from util.constant import DEPLOYED_APP_STATUS
+from models.facebook_api_status import FacebookApiStatus
+from models.facebook_api_type import FacebookApiType
+from datetime import datetime
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError, SQLAlchemyError  
 
 deployed_app_bp = Blueprint("deployed_app", __name__, url_prefix="/deployed_app")
 logger = logging.getLogger("deploy_logger")
@@ -107,9 +113,7 @@ def list_app():
 def sync():
     # Luôn expire session để lấy dữ liệu mới nhất từ DB (tránh cache)
     db.session.expire_all()
-    servers = (
-        db.session.query(Server).all()
-    )
+    servers = db.session.query(Server).all()
     for server in servers:
         try:
             do_sync(server.ip, server.admin_username, server.admin_password, server.id)
@@ -135,7 +139,9 @@ def sync_dns_txt():
         )
         app_map = {}
         for app, domain in apps:
-            full_domain = f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+            full_domain = (
+                f"{app.subdomain}.{domain.name}" if app.subdomain else domain.name
+            )
             txt_value = app.verification.txt_value if app.verification else None
             app_map[full_domain] = (app, txt_value)
 
@@ -164,7 +170,9 @@ def sync_dns_txt():
                         if verification is None or not verification.txt_value:
                             if verification:
                                 verification.txt_value = content
-                                verification.create_count = (verification.create_count or 0) + 1
+                                verification.create_count = (
+                                    verification.create_count or 0
+                                ) + 1
                             else:
                                 db.session.add(
                                     DomainVerification(
@@ -319,20 +327,98 @@ def migrate_app(app_id):
         flash(f"Lỗi chuyển server: {e}", "danger")
     return redirect(url_for("deployed_app.detail_app", app_id=app_id))
 
+
 @deployed_app_bp.route("/appinfo/update", methods=["POST"])
 @csrf.exempt
 def update_token():
-    data = request.get_json()
-    shortLivedUserToken = data.get("shortLivedUserToken", None)
-    appId = data.get("appId", None)
-    appSecret = data.get("appSecret", None)
-    is_exist = db.session.query(
-    exists().where(DeployedApp.env.like(f"%{appId}%"))).scalar()
-    if is_exist:
-        check = genTokenForApp(shortLivedUserToken, appId, appSecret)
-        if check is None:
-            return jsonify({"status": "failed", "message": "Lỗi xảy ra khi tạo token mới cho app"})
-        else:
-            return jsonify({"status": "success", "message": "Tạo token dài hạn thành công"})
-    else:
-        return jsonify({"status": "failed", "message": "Không tồn tại app tương ứng với id"})
+    try:
+        data = request.get_json(force=True)
+        short = data.get("shortLivedUserToken")
+        app_id = data.get("appId")
+        app_secret = data.get("appSecret")
+
+        if not all([short, app_id, app_secret]):
+            return jsonify({"status": "failed", "message": "Thiếu dữ liệu"}), 400
+
+        # Tìm app (KHÔNG tạo/ghi gì ở session hiện tại để tránh autoflush)
+        app_row = (
+            db.session.query(DeployedApp.id, DeployedApp.env)
+            .filter(DeployedApp.env.like(f"%{app_id}%"))
+            .first()
+        )
+        if not app_row:
+            return (
+                jsonify(
+                    {"status": "failed", "message": f"Không tồn tại app id {app_id}"}
+                ),
+                404,
+            )
+
+        # Đổi token
+        long_token = genTokenForApp(short, app_id, app_secret)
+        if not long_token:
+            return jsonify({"status": "failed", "message": "Tạo token thất bại"}), 500
+
+        # ---- Seed facebook_api_status bằng session riêng + INSERT IGNORE (tránh lock/autoflush) ----
+        now = datetime.utcnow()
+        ins_stmt = text(
+            """
+            INSERT IGNORE INTO facebook_api_status
+                (deployed_app_id, api_type_id,
+                 last_checked_at, total_calls, total_success_calls, total_errors,
+                 daily_calls, daily_success_calls, daily_reset_at, mode,
+                 reduced_mode_start, reduced_days_count,
+                 cooldown_until, next_eligible_at,
+                 last_rate_limit_at, last_error_code, last_error_subcode)
+            VALUES
+                (:app_id, :type_id,
+                 NULL, 0, 0, 0,
+                 0, 0, :now, 'normal',
+                 NULL, 0,
+                 NULL, NULL,
+                 NULL, NULL, NULL)
+        """
+        )
+
+        # dùng session tách biệt để không ảnh hưởng transaction hiện tại
+        with Session(bind=db.engine, expire_on_commit=False) as s:
+            # rút ngắn thời gian đợi lock để không treo request
+            s.execute(text("SET SESSION innodb_lock_wait_timeout = 3"))
+            # duyệt list id kiểu API trực tiếp trên session mới
+            type_ids = [
+                row[0]
+                for row in s.execute(text("SELECT id FROM facebook_api_type")).all()
+            ]
+
+            for t_id in type_ids:
+                try:
+                    s.execute(
+                        ins_stmt, {"app_id": app_row.id, "type_id": t_id, "now": now}
+                    )
+                except OperationalError as e:
+                    # nếu vẫn dính lock ở 1 row nào đó thì bỏ qua row đó, tiếp tục
+                    if "1205" in str(getattr(e, "orig", e)):
+                        logger.warning(
+                            f"[seed-status] Bỏ qua api_type={t_id} do lock-wait."
+                        )
+                        s.rollback()
+                        continue
+                    s.rollback()
+                    raise
+            s.commit()
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Tạo token dài hạn thành công",
+                    "longLivedUserToken": long_token,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Lỗi /appinfo/update: {e}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"status": "failed", "message": f"Lỗi hệ thống: {str(e)}"}), 500

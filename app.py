@@ -8,6 +8,8 @@ from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta
 from log import setup_logging
 from flask_login import LoginManager, current_user
+from service.faceBookApi import start_background_task\
+    
 from seeder.seed_user import seed_admin_user
 from seeder.seed_cloudflare_account import seed_cloudflare_account
 from seeder.seed_template import seed_template
@@ -15,6 +17,7 @@ from seeder.seed_company import seed_companies
 from seeder.seed_product import seed_product
 from seeder.seed_user_fe import seed_user_fe
 from seeder.seed_order import seed_orders
+from seeder.seed_facebook_api_type import seed_facebook_api_types
 from extensions import csrf
 
 from util.until import format_datetime
@@ -33,7 +36,10 @@ from models.order import Order
 from models.order_item import OrderItem
 from models.product import Product
 from models.user_fe import UserFE
-from service.faceBookApi import start_background_task
+from models.facebook_api_status import FacebookApiStatus
+from models.facebook_api_log import FacebookApiLog
+from models.facebook_api_type import FacebookApiType
+
 
 from flask_cors import CORS
 
@@ -149,5 +155,6 @@ if __name__ == "__main__":
         seed_product(app)
         seed_user_fe(app)
         seed_orders(app)
+        seed_facebook_api_types()
         start_background_task(app)
     app.run(host="0.0.0.0", port=4000, debug=True)

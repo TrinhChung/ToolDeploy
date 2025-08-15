@@ -1,213 +1,417 @@
-import requests
-from datetime import datetime
-from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
+# service/faceBookApi.py
+import logging
+import os
 import random
+import time
+from datetime import datetime, timedelta
+import threading
+import requests
+from sqlalchemy import func, text
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import load_only
+
 from database_init import db
 from models.deployed_app import DeployedApp
-import os
-import threading
-import time
-import logging
+from models.facebook_api_status import FacebookApiStatus
+from models.facebook_api_log import FacebookApiLog
+from models.facebook_api_type import FacebookApiType
 
 logger = logging.getLogger("deploy_logger")
+logger.setLevel(logging.INFO)
 
-def process_expires_at(token_data):
-    """
-    Xử lý expires_at từ dữ liệu token của Facebook.
-    Trả về thời gian hết hạn hoặc None nếu không có thời gian hết hạn.
-    """
-    expires_at = token_data.get("expires_at", None)
-    access_expires_at = token_data.get("data_access_expires_at", None)
-    if expires_at is None and access_expires_at is None:
-        raise RuntimeError("Lỗi xảy ra khi kiểm tra thời gian hết hạn.")
-    if expires_at == 0 and access_expires_at == 0:
-        return datetime(
-            2100, 1, 1
-        )
-    if expires_at == 0:
-        return datetime.fromtimestamp(access_expires_at)
-    if access_expires_at == 0:
-        return datetime.fromtimestamp(expires_at)
-    
-    return datetime.fromtimestamp(min(expires_at, access_expires_at))
+GRAPH_VERSION = "v21.0"
+BASE = f"https://graph.facebook.com/{GRAPH_VERSION}"
 
-def checkValidToken(userToken:str, appId:str, appSecret:str):
-    is_valid = False
-    appAccessToken = f"{appId}|{appSecret}"
-    checkUrl = f"https://graph.facebook.com/debug_token?input_token={userToken}&access_token={appAccessToken}"
-    # Gửi yêu cầu
-    response = requests.get(checkUrl, timeout=10)
-    data = response.json()
+IDLE_IF_NO_JOB_SECONDS = 30
+MAX_SLEEP_UNTIL_NEXT_JOB = 60
+BATCH_LIMIT = 120
+CLAIM_JITTER_MIN = 2
+CLAIM_JITTER_MAX = 5
 
-    if "data" in data:
-        token_data = data["data"]
-        if token_data:
-            is_valid = token_data.get("is_valid", False)
-            expire_at = process_expires_at(token_data)
-            return is_valid, expire_at
-    else:
-        logger.info("Không thể lấy thông tin token.")
-        logger.info(data)
-        raise RuntimeError(f"Lỗi xảy ra khi kiểm tra token: {userToken} với app: {appId}")
-        
-def genTokenForApp(shortLivedToken:str, appId:str, appSecret:str) -> str:
-    is_valid = False
-    expireAt = None
-    try:
-        is_valid, expireAt = checkValidToken(shortLivedToken, appId, appSecret)
-        if is_valid:
-            # =============================
-            # 1. Đổi sang User Token dài hạn
-            # =============================
-            logger.info("Đang đổi sang User Token dài hạn...")
-            exchange_url = (
-                f"https://graph.facebook.com/v21.0/oauth/access_token"
-                f"?grant_type=fb_exchange_token"
-                f"&client_id={appId}"
-                f"&client_secret={appSecret}"
-                f"&fb_exchange_token={shortLivedToken}"
-            )
-            logger
-            resp = requests.get(exchange_url)
-            resp.raise_for_status()
-            data = resp.json()
+_http = requests.Session()
+_http.mount(
+    "https://",
+    requests.adapters.HTTPAdapter(pool_connections=50, pool_maxsize=50, max_retries=3),
+)
 
-            LONG_LIVED_USER_TOKEN = data.get("access_token")
-            logger.info(f"User Token dài hạn: {LONG_LIVED_USER_TOKEN}")
-            
-            sql = """
-            UPDATE deployed_app DA
-            SET DA.long_lived_user_token = :token,
-                DA.token_expired_at = :expire_at
-            WHERE DA.env LIKE :pattern;
-            """
+RATE_LIMIT_RULES = {429: 3600, 4: 900, 17: 1800, 80004: 1800}
+SPECIAL_RATE_LIMIT_RULES = {(80004, 2446079): 1800}
 
-            params = {
-                "token": LONG_LIVED_USER_TOKEN,
-                "expire_at": expireAt,
-                "pattern": f"%{appId}%"
-            }
-            db.session.execute(text(sql), params)
+# Health flag
+_LAST_CLAIMED = 0
+
+
+# ---------------- Helpers ----------------
+def _cooldown_seconds(
+    code: int | None, subcode: int | None, http_status: int | None
+) -> int:
+    if (
+        code is not None
+        and subcode is not None
+        and (code, subcode) in SPECIAL_RATE_LIMIT_RULES
+    ):
+        return SPECIAL_RATE_LIMIT_RULES[(code, subcode)]
+    if code is not None and code in RATE_LIMIT_RULES:
+        return RATE_LIMIT_RULES[code]
+    if http_status == 429:
+        return RATE_LIMIT_RULES[429]
+    return 300
+
+
+def _normalize_numbers(st: FacebookApiStatus) -> None:
+    st.total_calls = st.total_calls or 0
+    st.total_success_calls = st.total_success_calls or 0
+    st.total_errors = st.total_errors or 0
+    st.daily_calls = st.daily_calls or 0
+    st.daily_success_calls = st.daily_success_calls or 0
+    st.reduced_days_count = st.reduced_days_count or 0
+
+
+def _commit_with_retry(ctx: str, retries: int = 3, base_delay: float = 0.05) -> None:
+    """Commit có retry, rollback ngay nếu gặp lock để tránh giữ metadata lock lâu."""
+    for i in range(retries):
+        try:
             db.session.commit()
+            return
+        except OperationalError as e:
+            msg = str(getattr(e, "orig", e))
+            if "1213" in msg or "1205" in msg:  # deadlock / lock wait timeout
+                logger.warning(f"[DB-RETRY:{ctx}] Deadlock/Timeout, retry {i+1}")
+                db.session.rollback()
+                time.sleep(base_delay * (2**i) + random.random() * base_delay)
+                continue
+            db.session.rollback()
+            logger.error(f"[DB-COMMIT-ERROR:{ctx}] {e}")
+            raise
+    db.session.commit()
 
-            return LONG_LIVED_USER_TOKEN
 
-            # # =============================
-            # # 2. Lấy Page Access Token
-            # # =============================
-            # logger.info("Đang lấy Page Access Token...")
-            # # APP_SCOPED_USER_ID: với user hiện tại, bạn có thể dùng "me"
-            # page_url = f"https://graph.facebook.com/v12.0/me/accounts?access_token={LONG_LIVED_USER_TOKEN}"
-            # logger.info(f"call api: {page_url}")
+def _json_error_fields(resp):
+    try:
+        data = resp.json()
+    except Exception:
+        return {}, None, None
+    err = data.get("error", {})
+    return data, err.get("code"), err.get("error_subcode")
 
-            # resultList = []
 
-            # resp = requests.get(page_url)
-            # resp.raise_for_status()
-            # pages = resp.json()
+def _pick_random_id(url: str, token: str, id_keys=("id", "account_id")):
+    """GET url (must return {data: [...]}) and pick a random id by keys."""
+    r = _http.get(url, params={"access_token": token}, timeout=10)
+    if not r.ok:
+        _, code, subcode = _json_error_fields(r)
+        return None, (r.status_code, code, subcode, r.text, f"{url}[lookup]")
+    try:
+        items = r.json().get("data", [])
+    except Exception:
+        items = []
+    if not items:
+        return None, (r.status_code, None, None, r.text, f"{url}[no-data]")
+    item = random.choice(items)
+    for k in id_keys:
+        if item.get(k):
+            return item.get(k), None
+    return None, (r.status_code, None, None, r.text, f"{url}[invalid-item]")
 
-            # if "data" in pages and len(pages["data"]) != 0:
-            #     for page in pages["data"]:
-            #         page_name = page.get("name")
-            #         page_id = page.get("id")
-            #         page_token = page.get("access_token")
 
-            #         # Tạo dict theo định dạng yêu cầu
-            #         page_dict = {
-            #             page_id: {
-            #                 "name": page_name,
-            #                 "pageToken": page_token
-            #             }
-            #         }
-            #         resultList.append(page_dict)
-            # else:
-            #     logger.info("Không tìm thấy page nào hoặc token không đủ quyền.")
+# ------------- Execute by api_type -------------
+def _exec_type_call(api_type_name: str, token: str):
+    if api_type_name == "ads_insights":
+        acc_id, err = _pick_random_id(
+            f"{BASE}/me/adaccounts", token, ("id", "account_id")
+        )
+        if err:
+            http, code, subcode, txt, mark = err
+            return (
+                False,
+                http,
+                code,
+                subcode,
+                txt,
+                f"type:ads_insights{mark.replace(BASE, '')}",
+            )
+        endpoint = f"/act_{acc_id}/insights"
+        r = _http.get(f"{BASE}{endpoint}", params={"access_token": token}, timeout=10)
+        if not r.ok:
+            _, code, subcode = _json_error_fields(r)
+            return False, r.status_code, code, subcode, r.text, endpoint
+        return True, r.status_code, None, None, r.text, endpoint
 
-            # # =============================
-            # # 3. (Tùy chọn) Lưu token vào file
-            # # =============================
-            # with open("tokens.txt", "w", encoding="utf-8") as f:
-            #     f.write(f"LONG_LIVED_USER_TOKEN={LONG_LIVED_USER_TOKEN}\n")
-            #     if "data" in pages:
-            #         for page in pages["data"]:
-            #             f.write(f"PAGE_{page['id']}_TOKEN={page['access_token']}\n")
+    if api_type_name == "list_page_posts":
+        page_id, err = _pick_random_id(f"{BASE}/me/accounts", token, ("id",))
+        if err:
+            http, code, subcode, txt, mark = err
+            return (
+                False,
+                http,
+                code,
+                subcode,
+                txt,
+                f"type:list_page_posts{mark.replace(BASE, '')}",
+            )
+        endpoint = f"/{page_id}/posts"
+        params = {
+            "fields": "id,message,created_time,reactions.summary(true),comments.summary(true)",
+            "access_token": token,
+        }
+        r = _http.get(f"{BASE}{endpoint}", params=params, timeout=10)
+        if not r.ok:
+            _, code, subcode = _json_error_fields(r)
+            return False, r.status_code, code, subcode, r.text, endpoint
+        return True, r.status_code, None, None, r.text, endpoint
 
-            # logger.info("💾 Token đã lưu vào tokens.txt")
-        else:
-            raise RuntimeError(f"short token: {shortLivedToken} của app: {appId} không còn hiệu lực.")
-    except requests.Timeout:
-        logger.info("Request timed out.")
+    return (
+        False,
+        None,
+        None,
+        None,
+        "Unsupported api_type",
+        f"type:{api_type_name}[unsupported]",
+    )
+
+
+# ---------------- Core call ----------------
+def call_facebook_api(deployed_app_id: int, api_type_id: int, access_token: str):
+    st = FacebookApiStatus.query.filter_by(
+        deployed_app_id=deployed_app_id, api_type_id=api_type_id
+    ).first()
+
+    if not st:
+        st = FacebookApiStatus(
+            deployed_app_id=deployed_app_id,
+            api_type_id=api_type_id,
+            daily_reset_at=datetime.utcnow(),
+        )
+        db.session.add(st)
+        _commit_with_retry("init-status")
+
+    _normalize_numbers(st)
+
+    if not st.can_call():
+        _commit_with_retry("skip-can_call")
         return None
+
+    api_type = FacebookApiType.query.get(api_type_id)
+    api_type_name = api_type.name if api_type else f"unknown:{api_type_id}"
+
+    try:
+        ok, http_status, code, subcode, resp_text, endpoint_str = _exec_type_call(
+            api_type_name, access_token
+        )
+
+        if ok:
+            st.record_call(success=True)
+            _commit_with_retry("ok")
+            return True
+
+        if code is not None or http_status == 429:
+            st.set_cooldown(
+                _cooldown_seconds(code, subcode, http_status),
+                error_code=code,
+                error_subcode=subcode,
+            )
+        st.record_call(success=False)
+
+        db.session.add(
+            FacebookApiLog(
+                deployed_app_id=deployed_app_id,
+                api_endpoint=endpoint_str,
+                status_code=http_status,
+                error_code=code,
+                error_subcode=subcode,
+                message=resp_text,
+            )
+        )
+        _commit_with_retry("fb-error")
+        return None
+
     except requests.RequestException as e:
-        logger.info(f"Lỗi khi gen token: {str(e)}")
-        return None
-    except RuntimeError as e:
-        logger.info(f"Lỗi khi gen token: {str(e)}")
-        return None
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.info(f"Error: Lỗi khi mysql update token {str(e)}")
+        st.set_cooldown(120, error_code=None, error_subcode=None)
+        st.record_call(success=False)
+        db.session.add(
+            FacebookApiLog(
+                deployed_app_id=deployed_app_id,
+                api_endpoint=f"type:{api_type_name}[http-exception]",
+                message=str(e),
+            )
+        )
+        _commit_with_retry("http-exc")
         return None
 
-def callApiFrequently(app):
+
+# ---------------- Scheduler ----------------
+def _has_any_status_rows() -> bool:
+    return (
+        db.session.query(FacebookApiStatus.deployed_app_id).limit(1).first() is not None
+    )
+
+
+def _claim_due_jobs(now: datetime, limit: int):
+    """
+    Claim theo 2 pha để tránh OR/COALESCE gây full-scan và next-key lock rộng.
+    Pha 1: next_eligible_at <= now
+    Pha 2: next_eligible_at IS NULL
+    """
+    claimed = []
+
+    # Pha 1: record đã có lịch và đến hạn
+    due1 = (
+        FacebookApiStatus.query.filter(
+            FacebookApiStatus.mode != "stopped",
+            FacebookApiStatus.next_eligible_at <= now,
+        )
+        .order_by(FacebookApiStatus.next_eligible_at.asc())
+        .with_for_update(skip_locked=True)
+        .limit(limit)
+        .all()
+    )
+
+    for st in due1:
+        st.next_eligible_at = now + timedelta(
+            seconds=random.randint(CLAIM_JITTER_MIN, CLAIM_JITTER_MAX)
+        )
+        claimed.append((st.deployed_app_id, st.api_type_id))
+
+    left = max(0, limit - len(due1))
+    if left:
+        # Pha 2: record chưa được lập lịch (NULL)
+        due2 = (
+            FacebookApiStatus.query.filter(
+                FacebookApiStatus.mode != "stopped",
+                FacebookApiStatus.next_eligible_at == None,
+            )
+            .with_for_update(skip_locked=True)
+            .limit(left)
+            .all()
+        )
+        for st in due2:
+            st.next_eligible_at = now + timedelta(
+                seconds=random.randint(CLAIM_JITTER_MIN, CLAIM_JITTER_MAX)
+            )
+            claimed.append((st.deployed_app_id, st.api_type_id))
+
+    if claimed:
+        _commit_with_retry("claim")
+
+    return claimed
+
+
+def due_scheduler_worker(app):
+    global _LAST_CLAIMED
     with app.app_context():
+        logger.info("[FB-DUE] Worker thread started.")
+        # Giảm phạm vi lock + timeout ngắn cho worker
+        try:
+            db.session.execute(
+                text("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
+            )
+            db.session.execute(text("SET SESSION innodb_lock_wait_timeout = 3"))
+            db.session.commit()
+            logger.info("[FB-DUE] Session=READ COMMITTED, lock_wait_timeout=3s")
+        except Exception:
+            db.session.rollback()
+
+        idle_ticks = 0
+
         while True:
             try:
-                apps = (
-                    DeployedApp.query
-                    .with_entities(DeployedApp.long_lived_user_token)
-                    .filter(DeployedApp.long_lived_user_token.isnot(None))
-                    .all()
+                now = datetime.utcnow()
+
+                if not _has_any_status_rows():
+                    if idle_ticks % 20 == 0:
+                        logger.info("[FB-DUE] No status rows yet, idle...")
+                    idle_ticks += 1
+                    time.sleep(IDLE_IF_NO_JOB_SECONDS)
+                    continue
+
+                claimed = _claim_due_jobs(now, BATCH_LIMIT)
+                _LAST_CLAIMED = len(claimed)
+
+                if not claimed:
+                    if idle_ticks % 10 == 0:
+                        nxt = (
+                            db.session.query(
+                                func.min(FacebookApiStatus.next_eligible_at)
+                            )
+                            .filter(FacebookApiStatus.next_eligible_at != None)
+                            .scalar()
+                        )
+                        logger.info("[FB-DUE] No due jobs. next_min=%s", nxt)
+                    idle_ticks += 1
+
+                    next_time = (
+                        db.session.query(func.min(FacebookApiStatus.next_eligible_at))
+                        .filter(FacebookApiStatus.next_eligible_at != None)
+                        .scalar()
+                    )
+                    if next_time:
+                        sleep_s = max(
+                            1, (next_time - datetime.utcnow()).total_seconds()
+                        )
+                        time.sleep(min(sleep_s, MAX_SLEEP_UNTIL_NEXT_JOB))
+                    else:
+                        time.sleep(IDLE_IF_NO_JOB_SECONDS)
+                    continue
+
+                idle_ticks = 0
+                logger.info(
+                    "[FB-DUE] Claimed %d jobs (ex: %s)...",
+                    len(claimed),
+                    claimed[:3],
                 )
 
-                length = len(apps)
-                for i in range(length):
-                    token = apps[i][0]
-                    try:
-                        accountListUrl = f"https://graph.facebook.com/v21.0/me/adaccounts"
-                        params_account = {"access_token": token}
-                        time.sleep(random.uniform(2, 5))
-                        accountListResponse = requests.get(accountListUrl, params=params_account, timeout=10)
-                        accountListResponse.raise_for_status()
-                        accountList = accountListResponse.json()
+                # Map token 1 lần
+                tokens = {
+                    row.id: row.long_lived_user_token
+                    for row in DeployedApp.query.options(
+                        load_only(DeployedApp.id, DeployedApp.long_lived_user_token)
+                    )
+                    .filter(DeployedApp.long_lived_user_token.isnot(None))
+                    .all()
+                }
 
-                        if "data" in accountList and len(accountList["data"]) != 0:
-                            for account in accountList["data"]:
-                                try:
-                                    account_id = account.get("id") or account.get("account_id")
-                                    if not account_id:
-                                        logger.info(f"Không tìm thấy account_id: {account}")
-                                        continue
+                # Gọi API cho từng job
+                for app_id, api_type_id in claimed:
+                    token = tokens.get(app_id)
+                    if not token:
+                        st = FacebookApiStatus.query.filter_by(
+                            deployed_app_id=app_id, api_type_id=api_type_id
+                        ).first()
+                        if st:
+                            st.set_cooldown(300)
+                            st.record_call(success=False)
+                            _commit_with_retry("no-token")
+                        continue
 
-                                    campaignListUrl = f"https://graph.facebook.com/v21.0/{account_id}/campaigns"
-                                    params_campaign = {
-                                        "fields": "start_time,objective,name,status,created_time,stop_time,special_ad_categories",
-                                        "access_token": token,
-                                    }
-                                    time.sleep(random.uniform(2, 5))
-                                    response = requests.get(campaignListUrl, params=params_campaign, timeout=10)
-                                    response.raise_for_status()
-                                    campaignList = response.json()
+                    call_facebook_api(app_id, api_type_id, token)
 
-                                    logger.info(f"Campaigns for account {account_id}: {campaignList.get('data', [])}")
-
-                                except requests.RequestException as e:
-                                    logger.info(f"Lỗi khi lấy campaigns cho account {account_id}: {e}")
-                                except Exception as e:
-                                    logger.info(f"Lỗi không xác định khi xử lý campaigns: {e}")
-
-                    except requests.RequestException as e:
-                        logger.info(f"Lỗi khi lấy danh sách tài khoản quảng cáo với token: {e}")
-                    except Exception as e:
-                        logger.info(f"Lỗi không xác định khi xử lý token: {e}")
-
+            except OperationalError as e:
+                logger.error("[FB-DUE] DB error: %s", e)
+                db.session.rollback()
+                time.sleep(5)
             except Exception as e:
-                logger.info(f"Lỗi khi xử lý callApiFrequently: {e}")
+                logger.exception("[FB-DUE] Unexpected error: %s", e)
+                time.sleep(5)
 
-            logger.info(f"Hoàn tất 1 vòng vào lúc {datetime.utcnow()}, nghỉ 30 - 60 phút...")
-            time.sleep(random.uniform(1800, 3600))
 
 def start_background_task(app):
-    t = threading.Thread(target=callApiFrequently, args=(app,), daemon=True)
-    t.start()
+    """Start worker 1 lần duy nhất trong process chính của reloader."""
+    if os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        logger.info("[FB-DUE] Skip start (not main reloader process).")
+        return
+
+    for t in threading.enumerate():
+        if t.name == "FB-DUE":
+            logger.info("[FB-DUE] Already running, skip.")
+            return
+
+    logger.info("[FB-DUE] Starting background worker...")
+    threading.Thread(
+        target=due_scheduler_worker, args=(app,), daemon=True, name="FB-DUE"
+    ).start()
+
+
+# Tùy chọn: healthcheck nhanh
+def fb_due_health():
+    alive = any(t.name == "FB-DUE" and t.is_alive() for t in threading.enumerate())
+    return {"alive": alive, "last_claimed": _LAST_CLAIMED}
