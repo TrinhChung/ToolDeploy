@@ -137,3 +137,17 @@ $env:FLASK_DEBUG = "1"
 
 #python 3
 sudo apt install -y build-essential pkg-config libmysqlclient-dev
+
+
+pip install redis rq
+sudo apt install redis-server
+
+
+sudo systemctl restart redis-server
+
+rq resume
+
+
+pip install rq-dashboard
+rq-dashboard
+
