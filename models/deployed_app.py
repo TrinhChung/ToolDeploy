@@ -14,6 +14,7 @@ class DeployedApp(db.Model):
         db.String(50), default=DEPLOYED_APP_STATUS.deploying.value
     ) 
     note = db.Column(db.String(255))
+    log = db.Column(db.Text, nullable=True)  # ✅ Thêm cột log
     long_lived_user_token = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(

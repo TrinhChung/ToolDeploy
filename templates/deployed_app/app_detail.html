@@ -25,35 +25,63 @@
 		<div class="card-body px-4 py-3">
 			<div class="row g-3 mb-3">
 				<div class="col-md-6">
-					<div class="mb-2"><strong>ID:</strong> <span class="text-secondary">{{ app.id }}</span></div>
+					<div class="mb-2"><strong>ID:</strong> <span class="text-secondary">{{
+							app.id }}</span></div>
 					<div class="mb-2"><strong>Tên server:</strong> <span class="text-secondary">{{ server.name }}</span></div>
 					<div class="mb-2"><strong>Tên miền:</strong> <span class="text-secondary">{{ domain.name }}</span></div>
 					<div class="mb-2"><strong>Subdomain:</strong> <span class="text-secondary">{{ app.subdomain or '-' }}</span>
 					</div>
-					<div class="mb-2"><strong>Ghi chú:</strong> <span class="text-secondary">{{ app.note or '-' }}</span></div>
-					<div class="mb-2"><strong>Ngày tạo:</strong> <span
-							class="text-secondary">{{ app.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+					<div class="mb-2"><strong>Ghi chú:</strong> <span class="text-secondary">{{
+							app.note or '-' }}</span></div>
+					<div class="mb-2"><strong>Ngày tạo:</strong> <span class="text-secondary">{{ app.created_at.strftime('%d/%m/%Y %H:%M')
+							}}</span></div>
+					<!-- KẾT THÚC BLOCK TỐI ƯU -->
+					{% if app.long_lived_user_token %}
+					<form action="{{ url_for('deployed_app.call_api', app_id=app.id) }}" method="post" class="d-inline">
+						<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+						<button type="submit" class="btn btn-primary">
+							<i class="fa fa-terminal me-1"></i>Gọi API của App
+						</button>
+					</form>
+					{% endif %}
+					{% if current_user.is_authenticated and current_user.is_admin %}
+					<hr>
+					<div class="mb-3">
+						<b>Ghi chú (log):</b>
+						<pre style="
+					                            background: #212529;
+					                            color: #04e762;
+					                            padding: 12px 16px;
+					                            border-radius: 8px;
+					                            font-size: 14px;
+					                            font-family: 'Fira Mono', 'Consolas', monospace;
+					                            white-space: pre-wrap;
+					                            word-break: break-all;
+					                            max-height: 350px;
+					                            overflow: auto;
+					                            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+					                            margin-top:8px;
+					                          ">{{ app.log|default('Chưa có ghi chú') }}</pre>
+					</div>
+					{% endif %}
 				</div>
 				<div class="col-md-6">
 					<div class="mb-2"><strong>ENV:</strong>
 						<pre class="bg-light p-2 rounded border" style="font-size:0.97em; min-height:64px;">{{ app.env or '-' }}
 						</pre>
 					</div>
-					<div class="mb-2"><strong>Log:</strong>
-						<pre class="bg-light p-2 rounded border" style="font-size:0.97em; min-height:64px;">{{ app.log or '-' }}
-						</pre>
-					</div>
 
 					{# Tạo biến động #}
-					{% set full_domain = 'https://' ~ ((app.subdomain ~ '.' if app.subdomain else '') ~ domain.name) %}
+					{% set full_domain = 'https://' ~ ((app.subdomain ~ '.' if app.subdomain
+					else '') ~ domain.name) %}
 					{% set policy_url = full_domain ~ '/polices' %}
-
 
 					<!-- BLOCK THÔNG TIN MỚI: ĐÃ TỐI ƯU GIAO DIỆN -->
 					<div class="info-block-list mt-4">
 						<div class="info-row">
 							<span class="info-label">Tên miền:</span>
-							<span class="info-value" id="domainText-{{ app.id }}">{{ full_domain }}</span>
+							<span class="info-value" id="domainText-{{ app.id }}">{{ full_domain
+								}}</span>
 							<button type="button" class="btn btn-sm btn-light btn-copy"
 								onclick="copyToClipboard('domainText-{{ app.id }}', this)">
 								<i class="fa fa-copy"></i>
@@ -61,7 +89,8 @@
 						</div>
 						<div class="info-row">
 							<span class="info-label">URL chính sách quyền riêng tư:</span>
-							<span class="info-value" id="policyUrlText-{{ app.id }}">{{ policy_url }}</span>
+							<span class="info-value" id="policyUrlText-{{ app.id }}">{{ policy_url
+								}}</span>
 							<button type="button" class="btn btn-sm btn-light btn-copy"
 								onclick="copyToClipboard('policyUrlText-{{ app.id }}', this)">
 								<i class="fa fa-copy"></i>
@@ -78,15 +107,20 @@
 						<div class="info-row align-items-start">
 							<span class="info-label pt-1">Mô tả sử dụng Dữ liệu nền tảng:</span>
 							<span class="info-value" style="max-width: 420px;" id="descText-{{ app.id }}">
-								Doanh nghiệp chúng tôi sử dụng Dữ liệu trên nền tảng để giúp khách hàng quản lý quảng cáo và các bài
+								Doanh nghiệp chúng tôi sử dụng Dữ liệu trên nền tảng để giúp khách hàng
+								quản lý quảng cáo và các bài
 								đăng trên các
-								kênh mạng xã hội hoặc trang web. Khách hàng cung cấp thông tin về các chiến dịch quảng cáo, bài đăng
+								kênh mạng xã hội hoặc trang web. Khách hàng cung cấp thông tin về các
+								chiến dịch quảng cáo, bài đăng
 								hoặc yêu cầu
-								quảng cáo riêng. Chúng tôi dùng dữ liệu này để tạo, quản lý và theo dõi các chiến dịch quảng cáo theo ý
+								quảng cáo riêng. Chúng tôi dùng dữ liệu này để tạo, quản lý và theo dõi
+								các chiến dịch quảng cáo theo ý
 								muốn của
-								khách hàng. Khách hàng sẽ sử dụng dịch vụ để xem, chỉnh sửa, theo dõi hiệu quả các chiến dịch và bài
+								khách hàng. Khách hàng sẽ sử dụng dịch vụ để xem, chỉnh sửa, theo dõi
+								hiệu quả các chiến dịch và bài
 								đăng của mình
-								một cách dễ dàng và thuận tiện. Chúng tôi chỉ sử dụng Dữ liệu trên nền tảng để phục vụ cho việc quản lý
+								một cách dễ dàng và thuận tiện. Chúng tôi chỉ sử dụng Dữ liệu trên nền
+								tảng để phục vụ cho việc quản lý
 								quảng cáo
 								cho khách hàng và không dùng cho mục đích khác.
 							</span>
@@ -96,13 +130,14 @@
 							</button>
 						</div>
 					</div>
-					<!-- KẾT THÚC BLOCK TỐI ƯU -->
 
 					{% if verification %}
 					<div class="mb-2">
 						<strong>TXT xác minh hiện tại:</strong>
-						<code class="d-block mt-1 mb-1" style="font-size:1em">{{ verification.txt_value }}</code>
-						<span class="small text-muted">Số lần tạo/cập nhật: {{ verification.create_count }}</span>
+						<code class="d-block mt-1 mb-1" style="font-size:1em">{{
+							verification.txt_value }}</code>
+						<span class="small text-muted">Số lần tạo/cập nhật: {{
+							verification.create_count }}</span>
 					</div>
 					{% endif %}
 					<form action="{{ url_for('deployed_app.add_dns_txt', app_id=app.id) }}" method="post" class="mt-2 mb-2">
@@ -114,7 +149,8 @@
 								<i class="fa fa-sync-alt me-1"></i>Cập nhật TXT
 							</button>
 						</div>
-						<small class="form-text text-muted">Bạn có thể cập nhật giá trị TXT mới cho app này bất cứ lúc nào.</small>
+						<small class="form-text text-muted">Bạn có thể cập nhật giá trị TXT mới
+							cho app này bất cứ lúc nào.</small>
 					</form>
 				</div>
 			</div>
