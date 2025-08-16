@@ -43,7 +43,7 @@ def seed_template(app):
                 "priority": 5,
             },
             {
-                "name": "Esuhai",
+                "name": "XKLD",
                 "description": "Website giới thiệu công ty Esuhai và dịch vụ xuất khẩu lao động",
                 "sample_url": "esuhai.example.com",
                 "port": 8221,
