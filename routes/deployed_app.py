@@ -50,7 +50,9 @@ logger = logging.getLogger("deploy_logger")
 @login_required
 def deploy_app():
     form = DeployAppForm()
-    form.server_id.choices = [(s.id, s.name) for s in Server.query.all()]
+    form.server_id.choices = [
+        (s.id, s.name) for s in Server.query.filter_by(ip="31.97.105.64").all()
+    ]
     form.domain_id.choices = [(d.id, d.name) for d in Domain.query.all()]
 
     if form.validate_on_submit():

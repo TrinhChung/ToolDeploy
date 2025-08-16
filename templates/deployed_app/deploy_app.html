@@ -83,26 +83,36 @@
 </div>
 
 <script>
-	document.getElementById('deployAppForm').addEventListener('submit', function (e) {
-		const subdomain = document.querySelector('input[name="subdomain"]');
-		const err = document.getElementById('subdomainError');
-		if (subdomain.value.trim() === "" || subdomain.value.includes('@')) {
-			e.preventDefault();
-			err.textContent = "Không được để trống và không nhập @ ở subdomain!";
-			subdomain.classList.add('is-invalid');
-			subdomain.focus();
-			return false;
-		} else {
-			subdomain.classList.remove('is-invalid');
-			err.textContent = "";
-		}
-	});
+	function slugify(text) {
+		return text
+			.normalize("NFD")                // tách dấu tiếng Việt
+			.replace(/[\u0300-\u036f]/g, "") // xóa dấu
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")     // thay ký tự đặc biệt bằng -
+			.replace(/^-+|-+$/g, "");        // bỏ - đầu/cuối
+	}
 
-	document.getElementById('btnDefaultEnv').addEventListener('click', function () {
-		document.querySelector('input[name="EMAIL"]').value = "nguyenlieuxmdn@gmail.com";
+	document.querySelector('input[name="APP_NAME"]').addEventListener('input', function () {
+		const appName = this.value.trim();
+		if (appName.length === 0) return;
+
+		// Tạo subdomain
+		const sub = slugify(appName);
+
+		// Tạo email (domain mặc định, có thể đổi)
+		const email = sub + "@info.com";
+
+		// Company name
+		const company = "CÔNG TY TNHH " + appName.toUpperCase();
+
+		// --- Điền giá trị vào form ---
+		document.querySelector('input[name="subdomain"]').value = sub;
+		document.querySelector('input[name="EMAIL"]').value = email;
+		document.querySelector('input[name="COMPANY_NAME"]').value = company;
+
+		// Các trường khác có thể để mặc định
 		document.querySelector('input[name="ADDRESS"]').value = "147 Thái Phiên, Phường 9, Quận 11, TP.HCM, Việt Nam";
 		document.querySelector('input[name="PHONE_NUMBER"]').value = "07084773586";
-		document.querySelector('input[name="COMPANY_NAME"]').value = "CÔNG TY TNHH NOIR STEED";
 		document.querySelector('input[name="TAX_NUMBER"]').value = "0318728792";
 	});
 </script>
